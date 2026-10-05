@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "釣魚日和 · 我的魚類圖鑑",
-  description: "將每一次釣魚回憶，收藏成像素襟章。",
+  title: "FISH LOG · 我的漁獲收藏",
+  description: "我的水域，我的漁獲。將每次釣魚回憶，收藏成專屬像素魚類圖鑑。",
   other: {
     "codex-preview": "development",
   },

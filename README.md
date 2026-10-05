@@ -1,41 +1,53 @@
-# 釣魚日和 · Tsuri Biyori
+# FISH LOG · Personal fish collection
 
-A personal fishing catch collection: upload a fish photo, turn it into a Japanese pixel-art badge, then place the badge on your corkboard.
+A private fishing journal with a pixel aquarium and catch timeline. The UI follows the supplied reference: warm off-white surfaces, monospaced typography, thin borders and small blue accents.
 
-![Tsuri Biyori collection board preview](preview.png)
+## Features
 
-## What it does
+- Firebase Google sign-in. Collections are isolated by Firebase user ID.
+- Firestore catch records at `users/{uid}/catches/{id}`. Server endpoints verify Firebase ID tokens; Firestore also enforces owner rules.
+- Authenticated Cloudinary images. Image endpoints verify document ownership and the account-specific asset path; credentials stay server-side.
+- Photo-to-pixel-fish generation through the existing OpenAI Images integration. JPG/PNG/WebP up to 10 MB.
+- Independent fish swimming, turns and resting. Motion respects reduced-motion preferences and pauses off screen, in background tabs and while dragging or using the keyboard.
+- Manual placement persists; autonomous swimming does not write each animation frame to Firestore.
+- Responsive aquarium, timeline, collection and filters. Empty collections show clearly labelled sample fish, never counted or saved.
+- The existing record fields are name, date, position and image references. Time, location and length show as unrecorded; Map explains when no location data is available.
 
-- Upload JPG, PNG, or WebP fish photos up to 10 MB.
-- Generate a pixel-art fish badge that keeps the fish's silhouette and markings.
-- Drag badges around the corkboard; their positions are saved automatically.
-- Keep the original catch photo beside each generated badge.
-- Store each catch under the signed-in user's account. New images live in authenticated Cloudinary storage and catch details live in D1. The image endpoint checks ownership before fetching an image; existing R2 images remain supported.
-- Try the sample badge without adding it to the collection.
+## Local development
 
-## Run locally
-
-Requirements: Node.js 22.13 or later.
+Requires Node.js 22.13 or newer.
 
 ```sh
 npm ci
-cp .env.example .dev.vars
-```
-
-Add the three Cloudinary credentials and an OpenAI API key to `.dev.vars` to enable photo-to-badge generation. Image generation uses the OpenAI Images API and may incur usage charges. Keep `.dev.vars` private; it is ignored by Git. Sign-in is simulated by the local Sites preview. Run:
-
-```sh
 npm run dev
 ```
 
-The development server prints its local URL. Use the preview's sign-in flow before opening the collection.
+Google sign-in is real in local development. Firebase allows `localhost` and `127.0.0.1`. The public Web App configuration is in `lib/firebase-client.ts`; it contains no administrative credentials.
 
-## Build
+Generation requires server-only values in the Git-ignored `.dev.vars` file (see `.env.example`): `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` and `OPENAI_API_KEY`. Keep existing configured values when adding a key. Image generation incurs provider usage charges.
 
 ```sh
+npm run test:firebase
+npm run test:storage
+npm run test:motion
+npx tsc --noEmit
 npm run build
 ```
 
-This project uses Vinext and is set up for the Sites runtime. Production requires the D1 database and server-side `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, and `OPENAI_API_KEY` secrets. Configure them in the hosting environment, never as `NEXT_PUBLIC_` values. The declared R2 binding is only used as a legacy fallback; no new R2 bucket is needed when Cloudinary is configured. No database migration is needed: Cloudinary references use the existing `source` and `image` columns. Existing R2 objects are not moved or deleted.
+## Service setup and verification
 
-Cloudinary uploads use the authenticated delivery type with overwrite disabled. Failed saves roll back newly uploaded images. No unsigned upload preset, public image URL, paid add-on, or AI-generated test request is required.
+Verified on 2026-10-06:
+
+- Firebase project `fishboard-36a96`: Google provider enabled; default Standard Firestore database created in `asia-east2` (Hong Kong).
+- `firestore.rules` published: owner-only access, schema checks, immutable image references and position-only updates.
+- Live Google sign-in, Firestore create, API list and position persistence passed. Anonymous access, cross-account reads and forged image-reference updates were rejected. Temporary test records were cleaned up.
+- Cloudinary local credentials configured in owner-readable `.dev.vars`. Authenticated Admin API ping, a tiny test image upload and signed image read returned HTTP 200. The test image was cleaned up.
+- Automated token-verification, storage rollback, account isolation and fish-motion checks passed.
+
+OpenAI generation has not been exercised because no OpenAI key is configured locally. Firebase and Cloudinary are connected; the complete photo-to-generated-fish flow still requires that key.
+
+## Deployment and old data
+
+The app uses Vinext with the existing Cloudflare/Sites build. Production must receive the Cloudinary credentials and OpenAI key as server secrets; local `.dev.vars` is not deployed. Add the actual deployed hostname to Firebase Authentication's authorized domains before using Google login there. Build success does not indicate deployment.
+
+New catch records use Firestore. Existing D1 records, migrations and R2 objects are preserved, but are not automatically imported or shown under Firebase accounts. A later migration needs an explicit mapping from the old account IDs to Firebase UIDs. No service-account key or unsigned Cloudinary upload preset is needed.

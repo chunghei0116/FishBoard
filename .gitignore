@@ -50,3 +50,5 @@ next-env.d.ts
 
 # Private Cloudflare Worker development secrets
 .dev.vars*
+
+.verification/

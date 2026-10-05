@@ -37,7 +37,7 @@ export async function uploadImage(env: CloudinaryEnv, file: Blob, publicId: stri
 
 function asset(env: CloudinaryEnv, reference: string) {
   const settings = config(env);
-  const match = /^cloudinary:([\w-]+)\/(fishboard\/[\w-]+\/(?:source|badge))\.(png|jpg|jpeg|webp)$/.exec(reference);
+  const match = /^cloudinary:([\w-]+)\/(fishboard\/(?:[\w-]+\/)?[\w-]+\/(?:source|badge))\.(png|jpg|jpeg|webp)$/.exec(reference);
   if (!match || match[1] !== settings.cloud) throw new Error('Invalid Cloudinary image reference');
   return { ...settings, publicId: match[2], format: match[3] };
 }
