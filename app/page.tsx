@@ -1,4 +1,5 @@
-import { Home } from "@/components/fishlog/pages";
+import Home from "@/components/fishlog/home";
+import { GeistSans } from "geist/font/sans";
 export default function Page() {
-  return <Home />;
+  return <Home className={GeistSans.variable} />;
 }

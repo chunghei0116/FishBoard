@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
+    "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.7.1",
     "@shadcn/react": "^0.3.0",
     "class-variance-authority": "0.7.1",
@@ -29,6 +30,8 @@
     "fast-png": "^8.0.0",
     "firebase": "^12.19.0",
     "framer-motion": "^14.0.0",
+    "geist": "^1.7.2",
+    "gsap": "^3.15.0",
     "input-otp": "^1.4.2",
     "jose": "^6.2.12",
     "jpeg-js": "^0.4.4",
