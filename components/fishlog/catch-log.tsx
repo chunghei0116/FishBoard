@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Clock3, MapPin, ArrowRight, Plus } from "lucide-react";
+import { Clock3, MapPin, ArrowRight, Plus, Search } from "lucide-react";
 import type { Catch, Species } from "@/data/types";
 import AddCatch from "./add-catch";
 import { filterCatches, speciesName, catchTimeLabel } from "@/lib/fish-log";
@@ -13,67 +13,24 @@ export function CatchRows({
   catches: Catch[];
   species: Species[];
 }) {
-  const dates = [...new Set(catches.map((c) => c.date))];
-  return (
-    <div className="fl-timeline">
-      {dates.map((date) => {
-        const day = new Date(date + "T12:00:00Z");
-        return (
-          <section className="fl-day" key={date}>
-            <div className="fl-date">
-              <b>{date.slice(8)}</b>
-              <span>
-                {day
-                  .toLocaleDateString("zh-HK", {
-                    month: "short",
-                    timeZone: "UTC",
-                  })
-                  .toUpperCase()}
-              </span>
-              <span>{date.slice(0, 4)}</span>
-              <i />
-            </div>
-            <div className="fl-day-records">
-              {catches
-                .filter((c) => c.date === date)
-                .map((c) => {
-                  const fish = species.find((s) => s.id === c.speciesId);
-                  if (!fish) return null;
-                  return (
-                    <Link
-                      href={`/catches/${c.id}`}
-                      className="fl-catch-row"
-                      key={c.id}
-                    >
-                      <PixelFish species={fish} />
-                      <div className="fl-catch-name">
-                        <b>{speciesName(fish)}</b>
-                        {fish.chineseName && fish.englishName && (
-                          <span>{fish.englishName.toUpperCase()}</span>
-                        )}
-                      </div>
-                      <span className="fl-catch-time">
-                        <Clock3 size={14} />
-                        {catchTimeLabel(c) || "—"}
-                      </span>
-                      <span className="fl-catch-location">
-                        <MapPin size={14} />
-                        {c.location}
-                      </span>
-                      <span className="fl-catch-length">
-                        {c.length ?? "—"} <small>厘米</small>
-                      </span>
-                      <ArrowRight className="fl-card-arrow" size={17} />
-                    </Link>
-                  );
-                })}
-            </div>
-          </section>
-        );
-      })}
-    </div>
-  );
+  return <div className="fl-catch-list">
+    {catches.map(c => {
+      const fish = species.find(s => s.id === c.speciesId);
+      if (!fish) return null;
+      return <Link href={`/catches/${c.id}`} className="fl-catch-row" key={c.id}>
+        <PixelFish species={fish} />
+        <div className="fl-catch-name"><b>{speciesName(fish)}</b>
+          {fish.chineseName && fish.englishName && <span>{fish.englishName}</span>}
+        </div>
+        <span className="fl-catch-time"><Clock3 size={14} /><time>{c.date}{catchTimeLabel(c) && ` · ${catchTimeLabel(c)}`}</time></span>
+        <span className="fl-catch-location"><MapPin size={14} />{c.location}</span>
+        <span className="fl-catch-length">{c.length ?? "—"} <small>厘米</small></span>
+        <ArrowRight className="fl-card-arrow" size={17} />
+      </Link>;
+    })}
+  </div>;
 }
+
 export default function CatchLog({
   catches,
   species,
@@ -82,6 +39,7 @@ export default function CatchLog({
   species: Species[];
 }) {
   const [adding, setAdding] = useState(false);
+  const [query, setQuery] = useState("");
   const [selectedSpecies, setSpecies] = useState(""),
     [location, setLocation] = useState(""),
     [year, setYear] = useState("");
@@ -89,6 +47,10 @@ export default function CatchLog({
     species: selectedSpecies,
     location,
     year,
+  }).filter(c => {
+    const fish = species.find(s => s.id === c.speciesId);
+    const text = [c.location, fish?.chineseName, fish?.englishName].join(" ").toLocaleLowerCase();
+    return text.includes(query.trim().toLocaleLowerCase());
   });
   return (
     <section id="catch-log" className="fl-log">
@@ -104,14 +66,16 @@ export default function CatchLog({
           </button>
         </div>
         <div className="fl-filters">
+          <label className="fl-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="搜尋漁獲" placeholder="搜尋魚種或地點" value={query} onChange={e => setQuery(e.target.value)} /></label>
           <button
             className={
-              !selectedSpecies && !location && !year ? "is-active" : ""
+              !selectedSpecies && !location && !year && !query ? "is-active" : ""
             }
             onClick={() => {
               setSpecies("");
               setLocation("");
               setYear("");
+              setQuery("");
             }}
           >
             全部

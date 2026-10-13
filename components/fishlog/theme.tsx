@@ -1,6 +1,27 @@
 "use client";
 import { ThemeProvider, useTheme } from "next-themes";
+import { createContext, useContext, useState, useSyncExternalStore } from "react";
+const WaterMotion = createContext<{ waterPaused: boolean; setWaterPaused: (paused: boolean) => void } | null>(null);
+export function useWaterMotion() {
+  const context = useContext(WaterMotion);
+  if (!context) throw Error("Water preferences require JournalTheme");
+  return context;
+}
+function subscribeWater(callback: () => void) {
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+function storedWaterPaused() {
+  try { return localStorage.getItem("fishlog-water-paused") === "true"; } catch { return false; }
+}
 export function JournalTheme({ children }: { children: React.ReactNode }) {
+  const stored = useSyncExternalStore(subscribeWater, storedWaterPaused, () => false);
+  const [override, setPaused] = useState<boolean | null>(null);
+  const waterPaused = override ?? stored;
+  function setWaterPaused(paused: boolean) {
+    setPaused(paused);
+    try { localStorage.setItem("fishlog-water-paused", String(paused)); } catch { /* The preference still applies for this visit. */ }
+  }
   return (
     <ThemeProvider
       attribute="data-theme"
@@ -9,7 +30,7 @@ export function JournalTheme({ children }: { children: React.ReactNode }) {
       storageKey="fishlog-theme"
       disableTransitionOnChange
     >
-      {children}
+      <WaterMotion.Provider value={{ waterPaused, setWaterPaused }}>{children}</WaterMotion.Provider>
     </ThemeProvider>
   );
 }

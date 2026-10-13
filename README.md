@@ -51,3 +51,7 @@ The interface uses Traditional Chinese navigation, labels, actions and measureme
 The Gear page presents an assembled fishing rig with interactive Rod, Reel, Main Line, Leader Line and Lure attachment callouts, responsive vertical artwork on mobile, and part highlighting on hover or selection. The save control appears above the floating navigation only when the stored values have changed, and hides again after saving or reverting edits. It stores a private loadout containing Rod, Reel, Main Line, Leader Line and Lure/Bait. Apply it in the Add Catch sheet to save a snapshot with that catch; subsequent loadout edits do not change past records. Signed-out visitors see the seaside Google login screen. Species and catches are separate; repeated catches share one aquarium fish.
 
 The new backend uses Firebase Auth / Firestore, Cloudinary and Cloudflare Workers AI. The older OpenAI/D1 collection described above is preserved as legacy code and is no longer the homepage. See [setup and validation](docs/service-setup.md) for the new configuration, standalone Worker deployment and the boundary between local tests and unverified live services. No account migration or deployment has been performed.
+
+## UI 設計規格
+
+新版藍白 UI、桌面總覽、手機分離式動畫導覽、Three.js 水波及設定頁的實作規格，見 [Fishboard UI 設計與實作規格](docs/design/fishboard-ui-design.md)。

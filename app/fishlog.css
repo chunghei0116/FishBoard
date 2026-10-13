@@ -611,16 +611,16 @@ body {
   text-decoration: underline;
 }
 .fl-primary {
-  display: inline-flex !important;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--fl-text) !important;
-  color: var(--fl-surface) !important;
+  background: var(--fl-text);
+  color: var(--fl-surface);
   border: 1px solid var(--fl-text);
   padding: 13px 23px;
   border-radius: 4px;
-  font: 11px var(--fl-mono) !important;
+  font: 11px var(--fl-mono);
   letter-spacing: 0.06em;
 }
 .fl-primary:disabled {

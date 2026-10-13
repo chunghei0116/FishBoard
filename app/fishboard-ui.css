@@ -1,0 +1,241 @@
+/* Fishboard's OpenDesign visual system; existing forms, data and 3D rig stay intact. */
+:root {
+  --fl-bg: #f5faff; --fl-surface: #fff; --fl-text: #1b2e3c;
+  --fl-muted: #637487; --fl-border: #dce6ef; --fl-blue: #0868ad;
+  --fl-soft: #e4f1fc; --fl-glass: rgba(255,255,255,.87);
+  --fl-nav-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  --fl-nav-dock-offset: 76px;
+}
+:root[data-theme="dark"] {
+  --fl-bg: #111d2a; --fl-surface: #192b3d; --fl-text: #e6f0f9;
+  --fl-muted: #a5b7c9; --fl-border: #304359; --fl-blue: #78bfff;
+  --fl-soft: #203c54; --fl-glass: rgba(23,40,57,.89);
+}
+body { background: var(--fl-bg); color: var(--fl-text); font-family: "Avenir Next", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+.shared-water { background: var(--fl-bg); }
+.fl-app-shell { display:grid; grid-template-columns:238px minmax(0,1fr); max-width:none; padding:0; position:relative; z-index:1; min-height:100svh; }
+.fl-sidebar { position:sticky; top:0; height:100svh; display:flex; flex-direction:column; padding:30px 18px 24px; border-right:1px solid var(--fl-border); background:var(--fl-surface); }
+.fl-brand { gap:11px; }
+.fl-brand-mark { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:#0868ad; color:white; flex:none; }
+.fl-brand b { display:block; font:800 19px/1.15 "Avenir Next",sans-serif; letter-spacing:-.04em; }
+.fl-brand small { font:11px/1.4 "PingFang TC",sans-serif; letter-spacing:.04em; margin-top:4px; }
+.fl-sidebar .fl-brand { margin:0 12px 40px; }
+.fl-sidebar-label { font-size:11px; color:var(--fl-muted); font-weight:600; margin:0 14px 14px; }
+.fl-sidebar nav { display:grid; gap:5px; }
+.fl-nav-link { display:flex; align-items:center; gap:12px; position:relative; color:var(--fl-muted)!important; font-size:14px; font-weight:600; }
+.fl-sidebar .fl-nav-link { padding:0 14px; min-height:46px; border-radius:11px; transition:background .2s,color .2s; }
+.fl-nav-link:hover { color:var(--fl-blue)!important; background:var(--fl-soft); }
+.fl-nav-link.is-active { color:var(--fl-blue)!important; background:var(--fl-soft); }
+.fl-nav-link small { margin-left:auto; font:11px var(--fl-mono); }
+.fl-sidebar-note { margin-top:auto; padding:20px 14px 0; border-top:1px solid var(--fl-border); font-size:12px; color:var(--fl-muted); }
+.fl-sidebar-note b { color:var(--fl-text); }
+.fl-sidebar-note p { margin:5px 0 0; line-height:1.6; }
+.fl-workspace { min-width:0; }
+.fl-app-header { height:79px; margin:0; padding:0 clamp(24px,4vw,60px); background:var(--fl-surface); border-bottom:1px solid var(--fl-border); }
+.fl-breadcrumb { display:flex; align-items:center; gap:13px; color:var(--fl-muted); font-size:13px; margin:0; }
+.fl-breadcrumb b { color:var(--fl-text); font-weight:600; }
+.fl-header-actions { display:flex; gap:18px; align-items:center; }
+.fl-primary,.fl-add-catch { font:600 13px "PingFang TC",sans-serif; letter-spacing:0; background:#0868ad; border:1px solid #0868ad; color:white; border-radius:11px; min-height:44px; padding:0 17px; display:inline-flex; gap:8px; align-items:center; justify-content:center; font-weight:600; }
+.fl-primary:hover,.fl-add-catch:hover { background:#07588f; }
+.fl-main-content { max-width:1400px; margin:0 auto; padding:35px clamp(24px,4vw,60px) 60px; min-width:0; }
+.fl-mobile-brand,.fl-mobile-dock { display:none; }
+.fl-page-intro { margin-bottom:26px; }
+.fl-page-intro .fl-eyebrow { color:var(--fl-blue); font-size:11px; letter-spacing:.1em; }
+.fl-page-intro h1 { font-size:clamp(27px,2.7vw,37px); font-weight:750; line-height:1.35; letter-spacing:-.02em; margin:8px 0; }
+.fl-page-intro>p:last-child { color:var(--fl-muted); font-size:13px; margin:8px 0 0; }
+.fl-overview-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.fl-overview-stat { display:flex; justify-content:space-between; align-items:start; padding:19px 22px; border:1px solid var(--fl-border); border-radius:15px; background:var(--fl-surface); }
+.fl-overview-stat span { font-size:13px; color:var(--fl-muted); }
+.fl-overview-stat strong { display:block; font-size:30px; line-height:1.1; font-weight:800; margin-top:11px; }
+.fl-overview-stat small { font-size:11px; font-weight:500; color:var(--fl-muted); margin-left:4px; }
+.fl-overview-stat>svg { color:var(--fl-blue); background:var(--fl-soft); padding:9px; width:38px; height:38px; border-radius:10px; }
+.fl-overview-grid { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(250px,.85fr); gap:17px; margin-bottom:32px; align-items:stretch; }
+.fl-overview-tank,.fl-latest-catch { background:var(--fl-surface); border:1px solid var(--fl-border); border-radius:17px; min-width:0; }
+.fl-overview-tank { display:flex; flex-direction:column; padding-bottom:18px; }
+.fl-panel-heading { display:flex; align-items:start; justify-content:space-between; padding:23px 24px 17px; gap:12px; }
+.fl-panel-heading h2,.fl-latest-catch h2 { margin:0; font-size:18px; font-weight:700; }
+.fl-panel-heading p,.fl-latest-catch>p { margin:5px 0 0; color:var(--fl-muted); font-size:12px; }
+.fl-panel-heading>a { display:flex; align-items:center; gap:4px; font-size:12px; font-weight:600; color:var(--fl-blue); white-space:nowrap; min-height:30px; }
+.fl-overview-tank .fl-aquarium { margin:0 18px; width:auto; min-height:290px; height:340px; flex:1; border-radius:13px; overflow:hidden; background:linear-gradient(180deg,#eff8ff,#d1eafa); }
+[data-theme="dark"] .fl-overview-tank .fl-aquarium { background:linear-gradient(180deg,#1b3c54,#14304a); }
+.fl-tank-water { opacity:.3; }
+.fl-tank-count { left:17px; top:16px; letter-spacing:.02em; font-size:10px; z-index:2; }
+.fl-tank-sign { font-size:9px; letter-spacing:0; right:14px; bottom:16px; }
+.fl-pause { border:1px solid var(--fl-border); background:var(--fl-surface); color:var(--fl-blue); border-radius:8px; width:34px; height:34px; display:grid; place-items:center; left:14px; bottom:13px; z-index:3; }
+.fl-fish-tooltip { border-radius:10px; min-width:140px; padding:12px; }
+.fl-latest-catch { padding:23px 24px 19px; display:flex; flex-direction:column; }
+.fl-latest-fish { display:grid; place-items:center; background:var(--fl-soft); min-height:145px; border-radius:12px; margin:20px 0 15px; }
+.fl-latest-fish .fl-pixel { width:180px; height:116px; }
+.fl-latest-catch>time { color:var(--fl-blue); font-size:11px; }
+.fl-latest-catch h3 { font-size:22px; font-weight:700; margin:7px 0 1px; }
+.fl-latest-catch dl { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:20px 0 17px; }
+.fl-latest-catch dt { color:var(--fl-muted); font-size:11px; }
+.fl-latest-catch dd { margin:4px 0 0; font-size:13px; }
+.fl-latest-link { display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; border:1px solid var(--fl-border); border-radius:10px; margin-top:auto; font-size:13px; font-weight:600; }
+.fl-latest-empty { min-height:240px; display:grid; place-items:center; color:var(--fl-muted); font-size:13px; }
+.fl-section-header h1,.fl-section-header h2 { border:0; padding:0; font-size:20px; font-weight:700; line-height:1.4; letter-spacing:0; }
+.fl-log-header { flex-wrap:wrap; gap:18px; margin-bottom:18px; }
+.fl-log-heading h1 { font:700 20px/1.4 "PingFang TC",sans-serif; letter-spacing:0; }
+.fl-log-heading .fl-add-catch { display:none; }
+.fl-filters { gap:9px; flex-wrap:wrap; }
+.fl-log-header .fl-filters { gap:9px; }
+.fl-filters select,.fl-filters button { font:12px "PingFang TC",sans-serif; min-height:40px; padding:0 12px; background:var(--fl-surface); border:1px solid var(--fl-border); border-radius:9px; color:var(--fl-text); letter-spacing:0; max-width:160px; }
+.fl-filters .is-active { border:1px solid var(--fl-blue); color:var(--fl-blue); background:var(--fl-soft); }
+.fl-search { display:flex; align-items:center; gap:8px; background:var(--fl-surface); border:1px solid var(--fl-border); border-radius:9px; color:var(--fl-muted); padding:0 12px; }
+.fl-search input { width:170px; min-width:0; min-height:40px; border:0; background:transparent; color:var(--fl-text); font-size:12px; outline-offset:2px; }
+.fl-catch-list { background:var(--fl-surface); border:1px solid var(--fl-border); border-radius:14px; overflow:hidden; }
+.fl-catch-list .fl-catch-row { border:0; border-bottom:1px solid var(--fl-border); border-radius:0; background:transparent; display:grid; grid-template-columns:54px minmax(100px,1fr) minmax(115px,.8fr) minmax(90px,.7fr) auto 17px; gap:16px; align-items:center; padding:15px 20px; min-height:82px; }
+.fl-catch-list .fl-catch-row:last-child { border-bottom:0; }
+.fl-catch-row:hover { background:var(--fl-soft); }
+.fl-catch-list .fl-catch-row>.fl-pixel { width:54px; height:48px; border-radius:9px; background-color:var(--fl-soft); }
+.fl-catch-name b { font-size:14px; font-weight:650; letter-spacing:0; }
+.fl-catch-name>span { font:10px "Avenir Next",sans-serif; letter-spacing:0; margin-top:3px; }
+.fl-catch-time,.fl-catch-location { font:11px/1.5 "PingFang TC",sans-serif; letter-spacing:0; }
+.fl-catch-length { font:600 13px "Avenir Next",sans-serif; }
+.fl-catch-length small { font-size:10px; }
+.fl-page-heading { margin:0 0 25px; }
+.fl-page-heading h1 { font-size:30px; font-weight:700; font-family:inherit; letter-spacing:0; margin:0; }
+.fl-collection { grid-template-columns:repeat(3,minmax(0,1fr)); gap:17px; }
+.fl-species-card { display:block; min-width:0; border-radius:15px; padding:23px; }
+.fl-species-card>div { flex-wrap:wrap; gap:8px; font-size:11px; letter-spacing:0; }
+.fl-species-card h2 { font-weight:700; }
+.fl-species-card>p { font-family:inherit; font-size:11px; letter-spacing:0; }
+.fl-back { font-family:inherit; font-size:12px; letter-spacing:0; margin:0 0 25px; }
+.fl-species-hero h1,.fl-detail-heading h1 { font-size:32px; font-weight:700; }
+.fl-detail-fish,.fl-detail-pixel { background:var(--fl-soft); border-radius:15px; }
+.fl-original { border-radius:13px; overflow:hidden; }
+.fl-angler-profile { margin:0; max-width:none; }
+.fl-fishing-license { max-width:none; margin:0 0 20px; border-radius:17px; }
+.fl-license-header h1 { font-size:19px; letter-spacing:0; }
+.fl-license-header>span,.fl-license-footer { letter-spacing:0; font-size:11px; }
+.fl-profile-loadout { margin:0 0 20px; background:var(--fl-surface); border:1px solid var(--fl-border); border-radius:17px; padding:23px 20px 10px; }
+.fl-profile-loadout .fl-page-heading { margin:0 0 18px; }
+.fl-profile-loadout h2,.fl-profile-preferences h2 { font:700 19px "PingFang TC",sans-serif; letter-spacing:0; }
+.fl-loadout { padding-bottom:0; }
+.fl-loadout-profile { margin-bottom:18px; }
+.fl-loadout-name input { font-size:21px; font-weight:700; }
+.fl-gear-progress { border:1px solid var(--fl-border); border-radius:99px; background:var(--fl-soft); padding:8px 12px; font:12px "PingFang TC",sans-serif; letter-spacing:0; }
+.fl-gear-progress>span { display:inline; font-size:11px; }
+.fl-rig-stage { height:575px; aspect-ratio:auto; border-radius:13px; overflow:hidden; }
+.fl-rig-stage::before { display:none; }
+.fl-rig-slot { border-radius:11px; }
+.fl-rig-slot-label { font:600 12px "PingFang TC",sans-serif; letter-spacing:0; }
+.fl-rig-slot-value { font:11px/1.5 "PingFang TC",sans-serif; }
+.fl-rig-slot-rod { left:3%; top:17%; right:auto; bottom:auto; }
+.fl-rig-slot-mainLine { left:3%; top:40%; right:auto; bottom:auto; }
+.fl-rig-slot-reel { left:3%; top:66%; right:auto; bottom:auto; }
+.fl-rig-slot-leaderLine { right:3%; top:30%; left:auto; bottom:auto; }
+.fl-rig-slot-lure { right:3%; top:61%; left:auto; bottom:auto; }
+.fl-profile-preferences { padding:22px 24px; margin:0; border:1px solid var(--fl-border); border-radius:17px; background:var(--fl-surface); }
+.fl-preference-row small { display:block; color:var(--fl-muted); font-size:11px; margin-top:4px; }
+.fl-preference-action,.fl-theme-options button { min-height:44px; border-radius:9px; }
+.fl-preference-action[aria-pressed="true"] { background:var(--fl-soft); color:var(--fl-blue); }
+.fl-gear-save-dock { left:calc(50% + 119px); bottom:24px; }
+@media (max-width:1100px) and (min-width:761px) {
+  .fl-app-shell { grid-template-columns:200px minmax(0,1fr); }
+  .fl-main-content { padding:28px 24px 50px; }
+  .fl-app-header { padding:0 24px; }
+  .fl-overview-grid { grid-template-columns:minmax(0,1fr); }
+  .fl-catch-list .fl-catch-row { grid-template-columns:48px minmax(100px,1fr) minmax(80px,.7fr) auto 17px; gap:12px; }
+  .fl-catch-time { display:none; }
+  .fl-gear-save-dock { left:calc(50% + 100px); }
+}
+@media (max-width:760px) {
+  .fl-app-shell { display:block; padding:0; }
+  .fl-sidebar { display:none; }
+  .fl-app-header { height:65px; padding:0 18px; gap:12px; }
+  .fl-mobile-brand { display:block; }
+  .fl-breadcrumb,.fl-desktop-add { display:none; }
+  .fl-brand-mark { width:34px; height:34px; border-radius:10px; }
+  .fl-brand b { font-size:17px; }
+  .fl-brand small { font-size:10px; }
+  .fl-main-content { padding:25px 16px calc(105px + env(safe-area-inset-bottom,0px)); }
+  .fl-page-intro { margin-bottom:20px; }
+  .fl-page-intro h1 { font-size:27px; line-height:1.4; }
+  .fl-overview-stats { gap:8px; margin-bottom:13px; }
+  .fl-overview-stat { padding:14px 12px; min-width:0; }
+  .fl-overview-stat>svg { display:none; }
+  .fl-overview-stat span { font-size:10px; }
+  .fl-overview-stat strong { font-size:24px; margin-top:9px; }
+  .fl-overview-stat small { display:block; margin:5px 0 0; font-size:10px; }
+  .fl-overview-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:13px; margin-bottom:25px; }
+  .fl-panel-heading { padding:19px 17px 15px; gap:10px; }
+  .fl-panel-heading h2,.fl-latest-catch h2 { font-size:17px; }
+  .fl-panel-heading p { font-size:11px; }
+  .fl-panel-heading>a { font-size:11px; }
+  .fl-overview-tank .fl-aquarium { margin:0 12px; height:285px; min-height:285px; }
+  .fl-overview-tank { padding-bottom:12px; }
+  .fl-tank-count { top:12px; left:12px; font-size:9px; }
+  .fl-latest-catch { display:grid; grid-template-columns:100px minmax(0,1fr); column-gap:14px; padding:19px 17px; }
+  .fl-latest-catch h2,.fl-latest-catch>p:first-of-type { grid-column:1/-1; }
+  .fl-latest-fish { grid-column:1; grid-row:3/7; min-height:110px; margin:15px 0 0; }
+  .fl-latest-fish .fl-pixel { width:92px; height:75px; }
+  .fl-latest-catch>time { margin-top:15px; font-size:10px; }
+  .fl-latest-catch h3 { font-size:20px; }
+  .fl-latest-catch dl { margin:10px 0 0; gap:8px; }
+  .fl-latest-link { grid-column:1/-1; margin-top:17px; }
+  .fl-latest-empty { grid-column:1/-1; min-height:120px; }
+  .fl-log-header { display:block; }
+  .fl-log-heading { margin-bottom:14px; }
+  .fl-log-header .fl-filters { display:flex; gap:7px; padding:0; overflow:visible; flex-wrap:wrap; }
+  .fl-search { width:100%; }
+  .fl-search input { width:100%; font-size:16px; }
+  .fl-filters select { flex:1; min-width:0; max-width:none; padding:0 7px; font-size:11px; }
+  .fl-filters button { font-size:11px; padding:0 10px; }
+  .fl-catch-list .fl-catch-row { grid-template-columns:48px minmax(0,1fr) auto; grid-template-rows:auto auto; column-gap:12px; row-gap:5px; padding:14px; }
+  .fl-catch-list .fl-catch-row>.fl-pixel { width:48px; height:44px; grid-row:1/3; }
+  .fl-catch-name { min-width:0; }
+  .fl-catch-name b { font-size:14px; }
+  .fl-catch-name>span { font-size:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fl-catch-time { display:flex; grid-column:2; font-size:10px; gap:5px; }
+  .fl-catch-time svg { display:none; }
+  .fl-catch-location { display:none; }
+  .fl-catch-length { grid-column:3; grid-row:1/3; font-size:12px; }
+  .fl-card-arrow { display:none; }
+  .fl-page-heading h1 { font-size:27px; }
+  .fl-collection { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .fl-species-card { padding:16px 12px; }
+  .fl-species-card>.fl-pixel { width:100%; height:100px; margin:20px auto; }
+  .fl-species-card>div { font-size:10px; flex-direction:column; }
+  .fl-species-card h2 { font-size:18px; }
+  .fl-profile-loadout { padding:19px 12px 6px; }
+  .fl-loadout-name input { font-size:18px; }
+  .fl-rig-stage { height:535px; }
+  .fl-rig-slot { width:30%; max-width:none; padding:7px 8px; }
+  .fl-rig-slot-label { font-size:10px; gap:4px; }
+  .fl-rig-slot-value { font-size:10px; }
+  .fl-rig-slot-rod { left:2%; top:11%; right:auto; bottom:auto; }
+  .fl-rig-slot-mainLine { left:2%; top:37%; right:auto; bottom:auto; }
+  .fl-rig-slot-reel { left:2%; top:auto; bottom:75px; right:auto; }
+  .fl-rig-slot-leaderLine { right:2%; top:24%; left:auto; bottom:auto; }
+  .fl-rig-slot-lure { right:2%; top:53%; left:auto; bottom:auto; }
+  .fl-rig-slot.is-active { width:43%; }
+  .fl-rig-slot input { min-width:0; width:100%; font-size:16px; }
+  .fl-profile-preferences { padding:19px 16px; }
+  .fl-preference-row { flex-wrap:wrap; gap:12px; }
+  .fl-license-header { padding:16px; }
+  .fl-license-body { padding:18px; gap:17px; grid-template-columns:80px minmax(0,1fr); }
+  .fl-license-portrait { width:80px; height:90px; }
+  .fl-license-holder h2 { font-size:19px; }
+  .fl-license-footer { padding:13px 16px; }
+  .fl-gear-save-dock { left:50%; bottom:calc(var(--fl-nav-bottom) + var(--fl-nav-dock-offset)); }
+  .fl-mobile-dock { display:flex; position:fixed; left:0; right:0; bottom:var(--fl-nav-bottom); z-index:1100; align-items:center; justify-content:space-between; padding:0 16px; gap:20px; pointer-events:none; }
+  .fl-mobile-add { pointer-events:auto; display:grid; place-items:center; width:56px; height:56px; flex:none; border:1px solid #ffffff55; border-radius:20px; background:linear-gradient(145deg,#207fc0,#075c9e); color:#fff; box-shadow:0 8px 24px #075c9e30,inset 0 1px 0 #ffffff40; }
+  .fl-mobile-add[aria-hidden="true"] { pointer-events:none; }
+  .fl-mobile-nav { pointer-events:auto; display:flex; align-items:center; gap:4px; padding:6px; border-radius:24px; background:var(--fl-glass); border:1px solid var(--fl-border); box-shadow:0 8px 28px #16375514,inset 0 1px 0 #ffffff66; -webkit-backdrop-filter:blur(22px) saturate(150%); backdrop-filter:blur(22px) saturate(150%); }
+  .fl-mobile-nav .fl-nav-link { display:grid; place-items:center; width:46px; height:44px; padding:0; border-radius:18px; background:transparent; gap:0; transition:color .2s; }
+  .fl-mobile-nav .fl-nav-link>span:not(.fl-nav-indicator) { display:none; }
+  .fl-mobile-nav .fl-nav-link svg { position:relative; z-index:1; transition:transform .25s; }
+  .fl-mobile-nav .fl-nav-link.is-active svg { transform:translateY(-1px); }
+  .fl-nav-indicator { position:absolute; inset:0; border-radius:18px; background:var(--fl-soft); box-shadow:inset 0 1px 0 #ffffff44; }
+}
+@media (max-width:360px) {
+  .fl-mobile-dock { padding:0 12px; gap:12px; }
+  .fl-mobile-nav .fl-nav-link { width:43px; }
+  .fl-mobile-add { width:52px; height:52px; border-radius:18px; }
+  .fl-page-intro h1 { font-size:24px; }
+  .fl-overview-stat { padding:13px 10px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .fl-mobile-nav .fl-nav-link svg { transition:none; }
+}

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ArrowUpRight, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Pencil, Fish, BookOpen, Ruler } from "lucide-react";
 import { useFishLog } from "./provider";
 import {
   summarizeSpecies,
@@ -17,12 +17,44 @@ import CatchLog, { CatchRows } from "./catch-log";
 const CatchEditor = dynamic(() => import("./add-catch"), { ssr: false });
 export function Home() {
   const { data, loading } = useFishLog();
+  const species = summarizeSpecies(data.species, data.catches);
+  const latest = sortCatches(data.catches)[0];
+  const latestFish = data.species.find(s => s.id === latest?.speciesId);
+  const lengths = data.catches.flatMap(c => c.length ? [c.length] : []);
   return (
     <>
-      <Aquarium
-        species={summarizeSpecies(data.species, data.catches)}
-        total={data.catches.length}
-      />
+      <div className="fl-page-intro"><p className="fl-eyebrow">MY FISHING JOURNAL</p>
+        <h1>每次出釣，都值得記住。</h1><p>整理你的漁獲、魚種與水邊足跡。</p>
+      </div>
+      <section className="fl-overview-stats" aria-label="漁獲統計" aria-busy={loading}>
+        {[
+          { label: "漁獲紀錄", value: data.catches.length, unit: "筆漁獲", Icon: Fish },
+          { label: "已收藏魚種", value: species.length, unit: "種魚類", Icon: BookOpen },
+          { label: "最長紀錄", value: lengths.length ? Math.max(...lengths) : "—", unit: "厘米", Icon: Ruler },
+        ].map(({ label, value, unit, Icon }) => <div key={label} className="fl-overview-stat">
+          <div><span>{label}</span><strong>{loading ? "—" : value}<small>{unit}</small></strong></div>
+          <Icon size={20} aria-hidden="true" />
+        </div>)}
+      </section>
+      <div className="fl-overview-grid">
+        <section className="fl-overview-tank">
+          <header className="fl-panel-heading"><div><h2>我的像素水族箱</h2><p>一個魚種，只會入住一位小住客。</p></div>
+            <Link href="/collection">查看圖鑑 <ArrowUpRight size={15} /></Link>
+          </header>
+          <Aquarium species={species} total={data.catches.length} />
+        </section>
+        <section className="fl-latest-catch">
+          <h2>最近一筆漁獲</h2><p>剛剛記下的水邊時光</p>
+          {latest && latestFish && !loading ? <>
+            <div className="fl-latest-fish"><PixelFish species={latestFish} /></div>
+            <time>{latest.date}{catchTimeLabel(latest) && ` · ${catchTimeLabel(latest)}`}</time>
+            <h3>{speciesName(latestFish)}</h3><p>{latest.location}</p>
+            <dl><div><dt>魚身長度</dt><dd>{latest.length ?? "—"} 厘米</dd></div>
+              <div><dt>重量</dt><dd>{latest.weight ?? "—"} 克</dd></div></dl>
+            <Link className="fl-latest-link" href={`/catches/${latest.id}`}>查看紀錄 <ArrowUpRight size={16} /></Link>
+          </> : <div className="fl-latest-empty">{loading ? "讀取紀錄中…" : "第一尾魚，第一個故事。"}</div>}
+        </section>
+      </div>
       {loading ? null : <CatchLog {...data} />}
     </>
   );
@@ -39,7 +71,7 @@ export function Collection() {
       </div>
       <div className="fl-collection">
         {species.map((fish, index) => (
-          <div className="fl-species-card" key={fish.id}>
+          <Link className="fl-species-card" key={fish.id} href={`/species/${fish.id}`}>
             <span className="fl-species-number">
               {String(index + 1).padStart(2, "0")} / 已解鎖
             </span>
@@ -52,7 +84,7 @@ export function Collection() {
               <span>{fish.totalCaught} 次釣獲</span>
               <span>最長 {fish.bestLength ?? "—"} 厘米</span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
       {!species.length && !loading && (

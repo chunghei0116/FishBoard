@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
-import { Pause, Play, ChevronDown } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import type { SpeciesSummary } from "@/data/types";
 import SwimmingFish from "./swimming-fish";
 export default function Aquarium({
@@ -89,10 +89,6 @@ export default function Aquarium({
           {paused ? <Play size={13} /> : <Pause size={13} />}
         </button>
       </section>
-      <a className="fl-scroll" href="#catch-log">
-        <ChevronDown size={20} />
-        <span>往下查看漁獲紀錄</span>
-      </a>
     </>
   );
 }
