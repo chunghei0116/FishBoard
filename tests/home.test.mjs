@@ -15,64 +15,80 @@ globalThis.homeFixture = { data: { species: [{ id: "fish", chineseName: "鱸魚"
 const mocks = {
   "next/image": `import {createElement} from '${import.meta.resolve("react")}'; export default function Image({fill,unoptimized,preload,sizes,...p}){return createElement('img',p)}`,
   "next/link": `import {createElement} from '${import.meta.resolve("react")}'; export default function Link(p){return createElement('a',p,p.children)}`,
-  "next/dynamic": `import {createElement} from '${import.meta.resolve("react")}'; export default function dynamic(){return function Add(p){return createElement('button',{'aria-label':'關閉新增',onClick:p.onClose},'新增視窗')}}`,
   "./provider": "export function useFishLog(){return globalThis.homeFixture}",
   "./aquarium": "export default function Aquarium(){return null}",
   "./pixel-fish": "export default function PixelFish(){return null}",
-  "./catch-log": `import {createElement} from '${import.meta.resolve("react")}'; export default function Log(){return createElement('section',{id:'catch-log'},'漁獲紀錄')}`,
   "@gsap/react": "export function useGSAP(){}",
   "gsap": "export const gsap={registerPlugin(){}}",
   "gsap/ScrollTrigger": "export const ScrollTrigger={}",
 };
-let source = transpile(await readFile(new URL("../components/fishlog/home.tsx", import.meta.url), "utf8"));
-for (const name of ["react", "react/jsx-runtime", "lucide-react"]) source = source.replaceAll(`from "${name}"`, `from "${import.meta.resolve(name)}"`);
-for (const [name, mock] of Object.entries(mocks)) source = source.replaceAll(`from "${name}"`, `from "${moduleUrl(mock)}"`);
-source = source.replaceAll('from "@/lib/fish-log"', `from "${helperUrl}"`);
+function resolveImports(source) {
+  for (const name of ["react", "react/jsx-runtime", "lucide-react"]) source = source.replaceAll(`from "${name}"`, `from "${import.meta.resolve(name)}"`);
+  for (const [name, mock] of Object.entries(mocks)) source = source.replaceAll(`from "${name}"`, `from "${moduleUrl(mock)}"`);
+  return source.replaceAll('from "@/lib/fish-log"', `from "${helperUrl}"`);
+}
+const logUrl = moduleUrl(resolveImports(transpile(await readFile(new URL("../components/fishlog/catch-log.tsx", import.meta.url), "utf8"))));
+const source = resolveImports(transpile(await readFile(new URL("../components/fishlog/home.tsx", import.meta.url), "utf8"))).replaceAll('from "./catch-log"', `from "${logUrl}"`);
 const { default: Home } = await import(moduleUrl(source));
-const click = async name => { const button = document.querySelector(`button[aria-label="${name}"]`); assert.ok(button, name); await act(async () => button.click()); };
 
-test("empty journal keeps add and archive actions, without invented catches", async () => {
+function records() {
+  return [
+    { id: "older", speciesId: "fish", date: "2025-09-01", location: "西貢", note: "第一次試新釣組。" },
+    { id: "latest", speciesId: "fish", date: "2026-10-01", location: "大埔", note: "日落前最後一投。" },
+  ];
+}
+
+test("homepage ends at the catch list and leaves creation to the navigation", async () => {
+  homeFixture.data.catches = records();
+  const root = createRoot(document.getElementById("root"));
+  try {
+    await act(async () => root.render(createElement(Home)));
+    const home = document.querySelector('.fl-home');
+    assert.equal(home.lastElementChild.className, 'fh-archive');
+    assert.ok(home.lastElementChild.querySelector('#catch-log'));
+    assert.equal(home.querySelector('button[aria-label="新增漁獲"]'), null);
+    assert.equal(home.querySelector('footer'), null);
+    assert.equal(home.querySelector('[aria-roledescription="carousel"]'), null);
+    assert.equal(home.querySelector('#action-title'), null);
+    assert.equal(home.querySelectorAll('.fl-catch-row').length, 2);
+  } finally { await act(async () => root.unmount()); }
+});
+
+test("empty journal retains the archive link and honest empty state", async () => {
   homeFixture.data.catches = [];
   const root = createRoot(document.getElementById("root"));
   try {
     await act(async () => root.render(createElement(Home)));
     assert.ok(document.querySelector('a[href="#catch-log"]'));
-    assert.ok(document.querySelector('#catch-log'));
-    assert.equal(document.querySelector('[aria-roledescription="carousel"]'), null);
-    await click("新增漁獲");
-    assert.ok(document.querySelector('button[aria-label="關閉新增"]'));
-    await click("關閉新增");
-    assert.equal(document.querySelector('button[aria-label="關閉新增"]'), null);
+    assert.ok(document.querySelector('#catch-log .fl-empty'));
+    assert.equal(document.querySelectorAll('.fl-catch-row').length, 0);
+    assert.equal(document.querySelector('.fl-home').lastElementChild.className, 'fh-archive');
   } finally { await act(async () => root.unmount()); }
 });
 
-test("story carousel wraps, links to the displayed catch, and recovers after a deletion", async () => {
-  homeFixture.data.catches = [
-    { id: "older", speciesId: "fish", date: "2026-09-01", location: "西貢", note: "第一次試新釣組。" },
-    { id: "latest", speciesId: "fish", date: "2026-10-01", location: "大埔", note: "日落前最後一投。" },
-  ];
+test("homepage search and combined year/location filters remain usable", async () => {
+  homeFixture.data.catches = records();
   const root = createRoot(document.getElementById("root"));
   try {
     await act(async () => root.render(createElement(Home)));
-    const story = () => document.querySelector('[aria-roledescription="carousel"]');
-    assert.ok(story().textContent.includes("日落前最後一投。"));
-    await click("下一筆故事");
-    assert.ok(story().textContent.includes("第一次試新釣組。"));
-    assert.ok(story().querySelector('a[href="/catches/older"]'));
-    await click("下一筆故事");
-    assert.ok(story().textContent.includes("日落前最後一投。"));
-    await click("上一筆故事");
-    homeFixture.data.catches = homeFixture.data.catches.filter(c => c.id !== "older");
-    await act(async () => root.render(createElement(Home)));
-    assert.ok(story().querySelector('a[href="/catches/latest"]'));
-    assert.ok(story().querySelector('button[aria-label="下一筆故事"]').disabled);
-    homeFixture.data.catches = [];
-    await act(async () => root.render(createElement(Home)));
-    assert.equal(story(), null);
+    const input = document.querySelector('input[type="search"]');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, '大埔');
+      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    });
+    assert.equal(document.querySelectorAll('.fl-catch-row').length, 1);
+    assert.ok(document.querySelector('.fl-catch-row').getAttribute('href').endsWith('/latest'));
+    const year = document.querySelector('select[aria-label="按年份篩選"]');
+    await act(async () => { year.value = '2025'; year.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
+    assert.equal(document.querySelectorAll('.fl-catch-row').length, 0);
+    await act(async () => document.querySelector('.fl-clear-filter').click());
+    assert.equal(document.querySelectorAll('.fl-catch-row').length, 2);
+    assert.equal(input.value, '');
+    assert.equal(year.value, '');
   } finally { await act(async () => root.unmount()); }
 });
 
-test("pending journal does not show empty archive or fictitious zero statistics", async () => {
+test("pending journal shows loading without an empty archive or zero statistics", async () => {
   homeFixture.loading = true;
   const root = createRoot(document.getElementById("root"));
   try {
@@ -80,18 +96,6 @@ test("pending journal does not show empty archive or fictitious zero statistics"
     assert.equal(document.querySelector('#catch-log .fl-empty'), null);
     assert.ok(document.querySelector('[aria-busy="true"]'));
     assert.ok(document.querySelector('[role="status"]').textContent.includes("讀取"));
+    assert.equal(document.querySelector('.fh-summary strong').textContent, '—筆');
   } finally { await act(async () => root.unmount()); homeFixture.loading = false; }
-});
-
-test("unavailable private story photo falls back to the fish artwork", async () => {
-  homeFixture.data.catches = [{ id: "photo", speciesId: "fish", date: "2026-10-01", location: "大埔", photo: "/api/images/private-photo" }];
-  const root = createRoot(document.getElementById("root"));
-  try {
-    await act(async () => root.render(createElement(Home)));
-    const photo = document.querySelector('.fh-story-art img');
-    assert.equal(photo.getAttribute('src'), '/api/images/private-photo');
-    await act(async () => photo.dispatchEvent(new dom.window.Event('error')));
-    assert.ok(document.querySelector('.fh-fish-art').textContent.includes('相片暫時未能載入'));
-    assert.ok(document.querySelector('.fh-story-art').getAttribute('href').includes('/catches/photo'));
-  } finally { await act(async () => root.unmount()); }
 });
