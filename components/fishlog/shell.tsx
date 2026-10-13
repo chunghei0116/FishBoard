@@ -7,10 +7,9 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Settings, House, BookOpen, MapPin, Plus, Fish, ArrowUpRight } from "lucide-react";
 import { updateAddVisibility } from "@/lib/mobile-navigation";
 import { useFishLog } from "./provider";
-import { ThemeSwitch, useWaterMotion } from "./theme";
+import { ThemeSwitch } from "./theme";
 import Landing from "./landing";
 const AddCatch = dynamic(() => import("./add-catch"), { ssr: false });
-const WaterBackground = dynamic(() => import("@/app/water-background"), { ssr: false });
 const items = [
   { href: "/", label: "總覽", Icon: House },
   { href: "/collection", label: "魚種圖鑑", Icon: BookOpen },
@@ -26,7 +25,6 @@ function Brand() {
 export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { error, user, data } = useFishLog();
-  const { waterPaused } = useWaterMotion();
   const reduced = useReducedMotion();
   const [adding, setAdding] = useState(false);
   const [scrollVisibility, setScrollVisibility] = useState({ path, hidden: false });
@@ -59,7 +57,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   });
   if (!user) return <div className="fl-shell fl-shell-guest"><header className="fl-header"><Brand /><ThemeSwitch /></header><Landing /></div>;
   return <>
-    <WaterBackground paused={waterPaused} />
     <div className="fl-shell fl-app-shell">
       <aside className="fl-sidebar">
         <Brand /><p className="fl-sidebar-label">我的釣魚日誌</p>

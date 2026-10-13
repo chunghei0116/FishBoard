@@ -1,9 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Clock3, MapPin, ArrowRight, Plus, Search } from "lucide-react";
+import { Clock3, MapPin, ArrowRight, Search, X } from "lucide-react";
 import type { Catch, Species } from "@/data/types";
-import AddCatch from "./add-catch";
 import { filterCatches, speciesName, catchTimeLabel } from "@/lib/fish-log";
 import PixelFish from "./pixel-fish";
 export function CatchRows({
@@ -38,7 +37,6 @@ export default function CatchLog({
   catches: Catch[];
   species: Species[];
 }) {
-  const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedSpecies, setSpecies] = useState(""),
     [location, setLocation] = useState(""),
@@ -54,72 +52,40 @@ export default function CatchLog({
   });
   return (
     <section id="catch-log" className="fl-log">
-      <div className="fl-section-header fl-log-header">
-        <div className="fl-log-heading">
-          <h1>漁獲紀錄</h1>
-          <button
-            type="button"
-            className="fl-add-catch"
-            onClick={() => setAdding(true)}
-          >
-            <Plus size={14} /> 新增漁獲
+      <div className="fl-section-header fl-log-title">
+        <h2>漁獲紀錄</h2>
+        <span className="fl-result-count" aria-live="polite">{filtered.length} / {catches.length} 筆紀錄</span>
+      </div>
+      <div className="fl-filter-bar">
+        <label className="fl-search">
+          <Search size={18} aria-hidden="true" />
+          <input type="search" aria-label="搜尋漁獲" placeholder="搜尋魚種或地點" value={query} onChange={e => setQuery(e.target.value)} />
+        </label>
+        <div className="fl-filter-options">
+          <label className="fl-filter-field"><span>魚種</span>
+            <select aria-label="按魚種篩選" value={selectedSpecies} onChange={e => setSpecies(e.target.value)}>
+              <option value="">全部魚種</option>
+              {species.filter(s => catches.some(c => c.speciesId === s.id)).map(s => <option value={s.id} key={s.id}>{speciesName(s)}</option>)}
+            </select>
+          </label>
+          <label className="fl-filter-field"><span>地點</span>
+            <select aria-label="按地點篩選" value={location} onChange={e => setLocation(e.target.value)}>
+              <option value="">全部地點</option>
+              {[...new Set(catches.map(c => c.location))].map(l => <option key={l}>{l}</option>)}
+            </select>
+          </label>
+          <label className="fl-filter-field"><span>年份</span>
+            <select aria-label="按年份篩選" value={year} onChange={e => setYear(e.target.value)}>
+              <option value="">全部年份</option>
+              {[...new Set(catches.map(c => c.date.slice(0, 4)))].sort().reverse().map(y => <option key={y}>{y}</option>)}
+            </select>
+          </label>
+          <button type="button" className="fl-clear-filter" disabled={!selectedSpecies && !location && !year && !query}
+            onClick={() => { setSpecies(""); setLocation(""); setYear(""); setQuery(""); }}>
+            <X size={15} aria-hidden="true" /><span>清除篩選</span>
           </button>
-        </div>
-        <div className="fl-filters">
-          <label className="fl-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="搜尋漁獲" placeholder="搜尋魚種或地點" value={query} onChange={e => setQuery(e.target.value)} /></label>
-          <button
-            className={
-              !selectedSpecies && !location && !year && !query ? "is-active" : ""
-            }
-            onClick={() => {
-              setSpecies("");
-              setLocation("");
-              setYear("");
-              setQuery("");
-            }}
-          >
-            全部
-          </button>
-          <select
-            aria-label="按魚種篩選"
-            value={selectedSpecies}
-            onChange={(e) => setSpecies(e.target.value)}
-          >
-            <option value="">魚種</option>
-            {species
-              .filter((s) => catches.some((c) => c.speciesId === s.id))
-              .map((s) => (
-                <option value={s.id} key={s.id}>
-                  {speciesName(s)}
-                </option>
-              ))}
-          </select>
-          <select
-            aria-label="按地點篩選"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          >
-            <option value="">地點</option>
-            {[...new Set(catches.map((c) => c.location))].map((l) => (
-              <option key={l}>{l}</option>
-            ))}
-          </select>
-          <select
-            aria-label="按年份篩選"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-          >
-            <option value="">年份</option>
-            {[...new Set(catches.map((c) => c.date.slice(0, 4)))]
-              .sort()
-              .reverse()
-              .map((y) => (
-                <option key={y}>{y}</option>
-              ))}
-          </select>
         </div>
       </div>
-      {adding && <AddCatch onClose={() => setAdding(false)} />}
       <CatchRows catches={filtered} species={species} />
       {!filtered.length && (
         <div className="fl-empty">

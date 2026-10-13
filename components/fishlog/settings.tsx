@@ -6,7 +6,6 @@ import { useTheme } from "next-themes";
 import { Download, LogOut, Moon, Sun, Waves } from "lucide-react";
 import { useFishLog } from "./provider";
 import Gear from "./gear";
-import { useWaterMotion } from "./theme";
 const subscribe = () => () => {};
 const clientSnapshot = () => true;
 const serverSnapshot = () => false;
@@ -14,7 +13,6 @@ const serverSnapshot = () => false;
 export default function Settings() {
   const { user, config, login, logout, data } = useFishLog();
   const { resolvedTheme, setTheme } = useTheme();
-  const { waterPaused, setWaterPaused } = useWaterMotion();
   const mounted = useSyncExternalStore(
     subscribe,
     clientSnapshot,
@@ -120,13 +118,6 @@ export default function Settings() {
               深色
             </button>
           </div>
-        </div>
-        <div className="fl-preference-row">
-          <div><span>背景水波</span><small>柔和水面光影；減少動態設定會自動暫停</small></div>
-          <button type="button" className="fl-preference-action" aria-pressed={waterPaused}
-            onClick={() => setWaterPaused(!waterPaused)}>
-            <Waves size={16} aria-hidden="true" />{waterPaused ? "繼續水波" : "暫停水波"}
-          </button>
         </div>
         <div className="fl-preference-row">
           <span>紀錄備份</span>

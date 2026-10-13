@@ -1,4 +1,11 @@
 import type { Catch, Species, SpeciesSummary } from "@/data/types";
+export function catchMarkerKey(record: Pick<Catch, "location" | "latitude" | "longitude">) {
+  const { latitude, longitude } = record;
+  if (latitude === undefined || longitude === undefined ||
+    !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+    Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+  return JSON.stringify([record.location, latitude, longitude]);
+}
 export function summarizeSpecies(
   species: Species[],
   catches: Catch[],

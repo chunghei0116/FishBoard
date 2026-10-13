@@ -6,7 +6,8 @@ import { useTheme } from "next-themes";
 import { journalMapStyle } from "@/lib/map-style";
 import { useFishLog } from "./provider";
 import { CatchRows } from "./catch-log";
-import { sortCatches } from "@/lib/fish-log";
+import { sortCatches, catchMarkerKey } from "@/lib/fish-log";
+import { X, MapPin } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 export default function CatchMap() {
   const { data } = useFishLog();
@@ -17,13 +18,6 @@ export default function CatchMap() {
     [error, setError] = useState(""),
     [fetching, setFetching] = useState(true);
   useLoading(fetching, "載入釣獲地圖…", 0);
-  const locations = [
-    ...new Set(
-      data.catches
-        .filter((c) => c.latitude !== undefined && c.longitude !== undefined)
-        .map((c) => c.location),
-    ),
-  ];
   useEffect(() => {
     let disposed = false;
     const abort = new AbortController();
@@ -67,11 +61,11 @@ export default function CatchMap() {
           "top-right",
         );
         const records = data.catches.filter(
-          (c) => c.latitude !== undefined && c.longitude !== undefined,
+          (c) => catchMarkerKey(c) !== null,
         );
         const points = new Map<string, typeof records>();
         for (const record of records) {
-          const key = `${record.location}:${record.latitude}:${record.longitude}`;
+          const key = catchMarkerKey(record)!;
           points.set(key, [...(points.get(key) || []), record]);
         }
         for (const records of points.values()) {
@@ -85,7 +79,12 @@ export default function CatchMap() {
             `${c.location} · ${records.length} 筆漁獲`,
           );
           button.title = `${c.location} · ${records.length} 筆漁獲`;
-          button.addEventListener("click", () => setSelected(c.location));
+          button.dataset.markerKey = catchMarkerKey(c)!;
+          button.setAttribute("aria-pressed", "false");
+          button.addEventListener("click", () => {
+            setSelected(catchMarkerKey(c)!);
+            instance.panTo([c.longitude!, c.latitude!]);
+          });
           new M.Marker({ element: button })
             .setLngLat([c.longitude!, c.latitude!])
             .addTo(instance);
@@ -110,59 +109,29 @@ export default function CatchMap() {
     };
   }, [data.catches, resolvedTheme]);
   const records = sortCatches(
-    data.catches.filter((c) => !selected || c.location === selected),
+    data.catches.filter((c) => !selected || catchMarkerKey(c) === selected),
   );
-  function choose(location: string) {
-    setSelected(location);
-    const record = data.catches.find(
-      (c) =>
-        c.location === location &&
-        c.latitude !== undefined &&
-        c.longitude !== undefined,
-    );
-    if (record) map.current?.panTo([record.longitude!, record.latitude!]);
-  }
+  const selectedLocation = selected ? records[0]?.location : undefined;
+  useEffect(() => {
+    host.current?.querySelectorAll<HTMLButtonElement>(".fl-map-marker").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.markerKey === selected));
+    });
+  }, [selected, fetching]);
   return (
     <>
       <div className="fl-page-heading">
         <h1>釣獲地圖</h1>
       </div>
       {error && <p className="fl-error">{error}</p>}
-      <div className="fl-map-layout">
+      <div className="fl-map-panel">
         <div>
           <div ref={host} className="fl-map" aria-label="釣獲地點地圖" />
-          <p className="fl-map-note">點擊藍色地點查看紀錄。</p>
-        </div>
-        <div className="fl-location-list">
-          <button
-            className={!selected ? "is-selected" : ""}
-            onClick={() => setSelected("")}
-          >
-            <b>所有水域</b>
-            <span>
-              {data.catches.length} 筆漁獲 / {locations.length} 個已標記地點
-            </span>
-          </button>
-          {locations.map((location) => {
-            const records = data.catches.filter((c) => c.location === location);
-            return (
-              <button
-                className={selected === location ? "is-selected" : ""}
-                key={location}
-                onClick={() => choose(location)}
-              >
-                <b>{location}</b>
-                <span>
-                  {records.length} 筆漁獲 /{" "}
-                  {new Set(records.map((c) => c.speciesId)).size} 個魚種
-                </span>
-              </button>
-            );
-          })}
+          <p className="fl-map-note"><MapPin size={14} aria-hidden="true" />點選地圖標記，查看該位置的漁獲。</p>
         </div>
       </div>
-      <div className="fl-section-header" style={{ marginTop: 45 }}>
-        <h2>{selected || "漁獲紀錄"}</h2>
+      <div className="fl-section-header fl-map-results">
+        <div><h2>{selectedLocation || (selected ? "此位置的漁獲" : "所有漁獲")}</h2><span className="fl-result-count" aria-live="polite">{records.length} 筆紀錄</span></div>
+        {selected && <button className="fl-clear-filter" onClick={() => setSelected("")}><X size={15} />顯示全部</button>}
       </div>
       <CatchRows catches={records} species={data.species} />
       {!records.length && (

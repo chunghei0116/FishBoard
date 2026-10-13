@@ -5,7 +5,6 @@ import { Fish, Plus, BookOpen, Upload, Sparkles, LoaderCircle, ArrowRight, Pause
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import Link from 'next/link';
 import Aquarium, { type AquariumFish } from './aquarium';
-import WaterBackground from './water-background';
 
 type Catch = AquariumFish & { date: string; x: number; y: number; source?: string };
 const demo: Catch = { id: 'sample-blue', name: '黑鯛 · 小藍', date: '', x: .5, y: .45, image: '/sample-fish.png', sample: true };
@@ -90,7 +89,7 @@ export default function Collection() {
     setReveal(null);
   }
 
-  return <><WaterBackground paused={paused}/><main className="fish-room">
+  return <><main className="fish-room">
     <header className="room-header">
       <Link href="/" className="room-brand"><span className="room-brand-icon"><Fish size={24} strokeWidth={1.6}/></span><span>釣魚日和<small>TSURI BIYORI</small></span></Link>
       <nav aria-label="收藏室"><span className="room-nav-active"><Waves size={16}/> 保管箱</span><button className="quiet-button" onClick={() => setAtlas(true)}><BookOpen size={16}/> 魚類圖鑑 <span className="nav-count">{items.length}</span></button></nav>

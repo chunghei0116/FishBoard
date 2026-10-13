@@ -169,23 +169,23 @@ export function CatchDetail({ id }: { id: string }) {
         <ArrowLeft size={15} /> 返回漁獲紀錄
       </Link>
       <div className="fl-detail-heading">
-        <h1>{speciesName(fish)}</h1>
+        <div className="fl-detail-title">
+          <p className="fl-eyebrow">CATCH RECORD</p>
+          <h1>{speciesName(fish)}</h1>
+          <Link className="fl-species-link" href={`/species/${fish.id}`}>
+            查看魚種圖鑑 <ArrowUpRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
         <div className="fl-detail-actions">
           <button
             type="button"
             className="fl-edit-catch"
             onClick={() => setEditing(true)}
           >
-            <Pencil size={15} /> 編輯
+            <Pencil size={16} aria-hidden="true" /> 編輯漁獲
           </button>
           <DeleteCatch id={record.id} name={speciesName(fish)} />
         </div>
-        <Link href={`/species/${fish.id}`}>
-          {fish.chineseName && fish.englishName
-            ? fish.englishName.toUpperCase()
-            : "魚種資料"}{" "}
-          <ArrowUpRight size={14} />
-        </Link>
       </div>
       <div className="fl-catch-detail">
         <div>

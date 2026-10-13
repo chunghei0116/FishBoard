@@ -1,15 +1,15 @@
 # 釣魚日和 · Tsuri Biyori
 
-A personal fishing catch collection: upload a fish photo, turn it into a Japanese pixel-art badge, then welcome the fish into your own 2D aquarium with a shared Three.js water background.
+A personal fishing catch collection: upload a fish photo, turn it into a Japanese pixel-art badge, then welcome the fish into your own 2D aquarium on a clean blue-white background.
 
 ## What it does
 
 - Upload JPG, PNG, or WebP fish photos up to 10 MB.
 - Generate a pixel-art fish badge that keeps the fish's silhouette and markings.
-- Each saved catch becomes one pixel fish arranged left to right, top to bottom inside a white frame, with a gentle idle wobble; a single water shader continues across the page and frame.
+- Each saved catch becomes one pixel fish arranged left to right, top to bottom inside a white frame, with a gentle idle wobble.
 - Click a fish or its keyboard-accessible label to open the catch record; browse all catches in the journal.
 - Preview the new fish before releasing it into the aquarium. Two demo fish appear by default (marked as demos in their accessible names and details), without uploading or generating anything; they are not saved or counted and can be removed together.
-- Pause the idle animation and water at any time. Reduced-motion preferences freeze the scene automatically; unsupported WebGL uses the static water colour; the 2D fish remain usable.
+- Pause the fish animation at any time. Reduced-motion preferences freeze the fish automatically; the 2D aquarium remains usable without WebGL.
 - Keep the original catch photo beside each generated badge.
 - Store each catch under the signed-in user's account. New images live in authenticated Cloudinary storage and catch details live in D1. The image endpoint checks ownership before fetching an image; existing R2 images remain supported.
 
@@ -54,4 +54,4 @@ The new backend uses Firebase Auth / Firestore, Cloudinary and Cloudflare Worker
 
 ## UI 設計規格
 
-新版藍白 UI、桌面總覽、手機分離式動畫導覽、Three.js 水波及設定頁的實作規格，見 [Fishboard UI 設計與實作規格](docs/design/fishboard-ui-design.md)。
+新版藍白 UI、桌面總覽、手機分離式動畫導覽、地圖 marker 篩選及設定頁的實作規格，見 [Fishboard UI 設計與實作規格](docs/design/fishboard-ui-design.md)。
