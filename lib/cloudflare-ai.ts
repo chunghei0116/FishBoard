@@ -17,5 +17,5 @@ export async function generatePixelFish(env:CloudflareAIEnv,reference:Blob) {
   let bytes:Uint8Array;try{bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0))}catch{throw new GenerationError('生圖服務傳回的圖片無法讀取。')}
   const type=bytes[0]===137&&bytes[1]===80?'image/png':bytes[0]===255&&bytes[1]===216?'image/jpeg':null;
   if(!type)throw new GenerationError('生圖服務傳回的圖片格式無效。');
-  return new Blob([bytes],{type});
+  return new Blob([new Uint8Array(bytes)],{type});
 }

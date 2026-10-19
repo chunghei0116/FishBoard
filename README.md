@@ -2,6 +2,20 @@
 
 A private fishing journal with a pixel aquarium and catch timeline. The UI follows the supplied reference: warm off-white surfaces, monospaced typography, thin borders and small blue accents.
 
+## Fisherman’s Island
+
+The home screen is a public, playable Three.js island with original procedural scenery and character art. Walk with WASD / arrow keys, click the ground or an object label to find a route, and press E near a station. Phones include directional touch controls. The Your island menu also opens each feature directly.
+
+- Red toolbox: existing catch photo upload and pixel-fish generation.
+- Glass aquarium: existing fish collection, placement, and details.
+- Journal table: catch timeline and filters.
+- Map board: existing fishing-waters view.
+- Cabin: existing settings and account controls.
+
+The island can be explored without signing in. Feature panels retain Firebase sign-in and owner-only data access. The small fish in the island scenery are decorative; saved catches are shown inside the authenticated aquarium. Gameplay pauses while panels are open. Reduced motion disables decorative movement.
+
+Run `npm run test:island` for boundary, movement, interaction-range, and route-finding checks.
+
 ## Features
 
 - Firebase Google sign-in. Collections are isolated by Firebase user ID.

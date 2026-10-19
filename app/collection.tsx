@@ -156,10 +156,11 @@ async function request(url: string, options?: RequestInit) {
   if (!r.ok) throw Error(data.error || "暫時未能儲存，請再試一次。");
   return data;
 }
-export default function Collection(){return <FirebaseSession><Home/></FirebaseSession>}
-function Home() {
+type CollectionProps = {initialTab?:string;initialAction?:'upload'|'settings';embedded?:boolean};
+export default function Collection(props:CollectionProps){return <FirebaseSession><Home {...props}/></FirebaseSession>}
+function Home({initialTab='home',initialAction,embedded=false}:CollectionProps) {
   const [items, setItems] = useState<Catch[]>([]),
-    [open, setOpen] = useState(false),
+    [open, setOpen] = useState(initialAction === "upload"),
     [file, setFile] = useState<File | null>(null),
     [photo, setPhoto] = useState(""),
     [name, setName] = useState(""),
@@ -173,8 +174,8 @@ function Home() {
     [saving, setSaving] = useState<string | null>(null),
     [loaded, setLoaded] = useState(false),
     [sample, setSample] = useState<Catch | null>(null);
-  const [tab, setTab] = useState("home"),
-    [settings, setSettings] = useState(false),
+  const [tab, setTab] = useState(initialTab),
+    [settings, setSettings] = useState(initialAction === "settings"),
     [species, setSpecies] = useState(""),
     [location, setLocation] = useState(""),
     [year, setYear] = useState("");
@@ -449,7 +450,7 @@ function Home() {
     );
   }
   return (
-    <main className="club">
+    <main className={"club" + (embedded ? " island-collection" : "")}>
       <header className="masthead">
         <Link href="/" className="brand">
           <svg
