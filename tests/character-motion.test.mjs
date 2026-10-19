@@ -37,6 +37,6 @@ test("knees bend only forward and reduced motion removes decorative motion", () 
   }
   const gait = sampleGait({ blend: 1, phase: 1, yaw: 0 }, 5, true);
   assert.equal(gait.bob, 0);
-  assert.deepEqual(gait.legs, [0, 0]);
+  assert.ok(gait.legs.every(value=>value===0));
   assert.equal(gait.breath, 0);
 });

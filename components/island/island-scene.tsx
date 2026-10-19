@@ -96,7 +96,7 @@ export default function IslandScene({
     const art = createScenery(scene),
       character = createCharacter(scene);
     let position: Point = { x: 0.6, z: 2.4 };
-    character.group.position.set(position.x, 0.7, position.z);
+    character.group.position.set(position.x, 0.74, position.z);
     const halo = new T.Mesh(
       new T.RingGeometry(0.42, 0.51, 32),
       new T.MeshBasicMaterial({
@@ -339,6 +339,7 @@ export default function IslandScene({
       window.removeEventListener("keyup", keyup);
       window.removeEventListener("blur", blur);
       renderer.domElement.removeEventListener("pointerdown", click);
+      character.dispose();
       scene.traverse((o) => {
         if (o instanceof T.Mesh || o instanceof T.Line) {
           o.geometry.dispose();
@@ -348,6 +349,7 @@ export default function IslandScene({
           materials.forEach((m) => m.dispose());
         }
       });
+      sun.shadow.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };

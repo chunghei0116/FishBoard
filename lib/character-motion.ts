@@ -16,7 +16,7 @@ export function updateMotion(
       state.blend +
       ((moving ? 1 : 0) - state.blend) *
         (1 - Math.exp(-(moving ? 12 : 9) * delta)),
-    phase: state.phase + Math.max(0, distance) * 5.3,
+    phase: state.phase + Math.max(0, distance) * 3.8,
     yaw: smoothAngle(state.yaw, targetYaw, delta),
   };
 }
