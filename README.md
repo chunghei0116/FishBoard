@@ -62,6 +62,12 @@ OpenAI generation has not been exercised because no OpenAI key is configured loc
 
 ## Deployment and old data
 
-The app uses Vinext with the existing Cloudflare/Sites build. Production must receive the Cloudinary credentials and OpenAI key as server secrets; local `.dev.vars` is not deployed. Add the actual deployed hostname to Firebase Authentication's authorized domains before using Google login there. Build success does not indicate deployment.
+Vercel uses `vercel.json` → `npm run build:vercel` (`next build --webpack`) and the `.next` output directory. Do not use the default `npm run build` for Vercel: it runs Vinext and does not produce Next.js's `routes-manifest.json`. The Next.js build maps the API's `cloudflare:workers` environment import to server-only environment variables; it does not change the island or its feature panels.
+
+```sh
+npm run build:vercel
+```
+
+Local development and Cloudflare/Sites builds retain Vinext (`npm run dev` / `npm run build`) and native Worker bindings. Production must receive the Cloudinary credentials and OpenAI key as server secrets; local `.dev.vars` is not deployed. For local Next.js verification, use an ignored `.env.local`. Never prefix server secrets with `NEXT_PUBLIC_`. Add the actual deployed hostname to Firebase Authentication's authorized domains before using Google login there. Build success does not indicate deployment.
 
 New catch records use Firestore. Existing D1 records, migrations and R2 objects are preserved, but are not automatically imported or shown under Firebase accounts. A later migration needs an explicit mapping from the old account IDs to Firebase UIDs. No service-account key or unsigned Cloudinary upload preset is needed.
