@@ -2,7 +2,15 @@
 
 `hoodie-character.blend` is the editable Blender 5.2 source, with named materials, smooth meshes, skin weights, a 15-bone armature, Idle/Walk actions, and a portrait lighting setup. The saved scene previews Idle. Walk is available as an action and a muted NLA track.
 
-`../../public/models/hoodie-character.glb` is the Three.js runtime asset. It contains the character and animation, excluding the studio ground, lights and camera. The island loads this asset; the mixer blends Idle and Walk and synchronizes the walk phase to movement distance.
+`../../public/models/hoodie-character.glb` is the full-detail export. The island loads `hoodie-character-low-poly.glb`, a derivative with 8,575 triangles, flat face normals and solid colours instead of fabric textures. It keeps the cream hoodie, cargo trousers, backpack, original skin weights, and Idle/Walk clips. The mixer blends Idle and Walk and synchronizes the walk phase to movement distance.
+
+After exporting changes from Blender, regenerate the runtime model with:
+
+```sh
+node art/character/build-low-poly.mjs
+```
+
+The generator uses the pinned development dependencies glTF Transform and meshoptimizer. It preserves the authored rig and animations and enforces a 12,000-triangle ceiling. The detailed `.blend` and original `.glb` remain the editable source; do not overwrite them with the simplified asset.
 
 Edit the `.blend` in Blender, then export selected character meshes and the armature as glTF Binary with skinning and animation enabled. Preserve the `Idle` and `Walk` clip names. Forward is Blender -Y, up is Z; the exporter converts to Three.js coordinates.
 

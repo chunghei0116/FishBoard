@@ -16,6 +16,8 @@ The island can be explored without signing in. Feature panels retain Firebase si
 
 Run `npm run test:island` for boundary, movement, interaction-range, and route-finding checks.
 
+The player uses a faceted low-poly hoodie character with the original Blender rig and Idle/Walk animations. See [character asset workflow](art/character/README.md) for source files, regeneration and geometry checks.
+
 ## Features
 
 - Firebase Google sign-in. Collections are isolated by Firebase user ID.

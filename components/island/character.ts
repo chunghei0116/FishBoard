@@ -19,7 +19,7 @@ function release(root: T.Object3D) {
   });
   textures.forEach((texture) => texture.dispose());
 }
-/** Load the authored Blender asset; Three.js only handles playback and world placement. */
+/** Load the low-poly derivative of the Blender rig; preserve authored playback. */
 export function createCharacter(
   scene: T.Scene,
   onError?: (error: unknown) => void,
@@ -32,7 +32,7 @@ export function createCharacter(
     idle: T.AnimationAction | null = null,
     walk: T.AnimationAction | null = null;
   new GLTFLoader().load(
-    "/models/hoodie-character.glb",
+    "/models/hoodie-character-low-poly.glb",
     (gltf) => {
       if (disposed) {
         release(gltf.scene);
@@ -46,6 +46,9 @@ export function createCharacter(
           o.castShadow = !o.name.includes("Subtle_cheek");
           o.receiveShadow = true;
           o.frustumCulled = false;
+          for (const material of Array.isArray(o.material) ? o.material : [o.material]) {
+            if (material instanceof T.MeshStandardMaterial) material.flatShading = true;
+          }
         }
       });
       group.add(model);
