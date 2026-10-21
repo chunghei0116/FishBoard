@@ -16,7 +16,7 @@ The island can be explored without signing in. Feature panels retain Firebase si
 
 Run `npm run test:island` for boundary, movement, interaction-range, and route-finding checks.
 
-The player uses a faceted low-poly hoodie character with the original Blender rig and Idle/Walk animations. See [character asset workflow](art/character/README.md) for source files, regeneration and geometry checks.
+The player is an original low-poly island angler: sand bucket hat, sea-blue shirt, olive fishing vest, shorts and a canvas equipment pack. Its articulated Idle/Walk loops follow movement distance. See [character design and asset workflow](art/character/README.md) for regeneration and geometry checks.
 
 ## Features
 

@@ -2,9 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 const path = new URL("../public/models/hoodie-character.glb", import.meta.url);
-const lowPolyPath = new URL("../public/models/hoodie-character-low-poly.glb", import.meta.url);
-function readAsset(assetPath = path) {
-  const data = readFileSync(assetPath);
+function readAsset() {
+  const data = readFileSync(path);
   assert.equal(data.readUInt32LE(0), 0x46546c67);
   assert.equal(data.readUInt32LE(4), 2);
   const length = data.readUInt32LE(12);
@@ -13,10 +12,10 @@ function readAsset(assetPath = path) {
 
 // Rig/topology checks need the original binary geometry, not browser image decoding.
 // Keep the skin/animation buffers intact and remove material bindings in this test copy.
-async function loadGeometryAsset(assetPath = path) {
+async function loadGeometryAsset() {
   const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
-  const data = readFileSync(assetPath),
-    gltf = readAsset(assetPath),
+  const data = readFileSync(path),
+    gltf = readAsset(),
     jsonLength = data.readUInt32LE(12),
     binStart = 28 + jsonLength;
   const binary = data.subarray(
@@ -64,9 +63,9 @@ test("export is a bounded game asset with normals and valid animation references
     }
 });
 
-for (const assetPath of [path, lowPolyPath]) test(`${assetPath === path ? "Authored" : "Low-poly"} walk bends knees backward throughout the loop`, async () => {
+test("authored walk bends knees backward throughout the loop", async () => {
   const { AnimationMixer, Vector3 } = await import("three");
-  const gltf = await loadGeometryAsset(assetPath);
+  const gltf = await loadGeometryAsset();
   const clip = gltf.animations.find((a) => a.name === "Walk");
   const mixer = new AnimationMixer(gltf.scene);
   mixer.clipAction(clip).play();
@@ -97,43 +96,6 @@ for (const assetPath of [path, lowPolyPath]) test(`${assetPath === path ? "Autho
       );
     }
   }
-});
-
-test("runtime character has real low-poly facets and retains the authored rig and animations", async () => {
-  const source = readAsset(), low = readAsset(lowPolyPath);
-  assert.deepEqual(low.skins.map((s) => s.joints.length), source.skins.map((s) => s.joints.length));
-  assert.deepEqual(low.animations.map((a) => [a.name, a.channels.length]), source.animations.map((a) => [a.name, a.channels.length]));
-  assert.ok(!low.images?.length, "Solid colours must not retain fabric textures");
-  const colour = (name) => low.materials.find((m) => m.name === name).pbrMetallicRoughness.baseColorFactor;
-  assert.ok(colour("Warm cream cotton hoodie")[0] > 0.6);
-  assert.ok(colour("Washed charcoal cargo cotton").slice(0, 3).every((v) => v < 0.1));
-  assert.ok(colour("Black woven backpack").slice(0, 3).every((v) => v < 0.04));
-  const gltf = await loadGeometryAsset(lowPolyPath);
-  let triangles = 0;
-  gltf.scene.traverse((obj) => {
-    if (!obj.isMesh) return;
-    assert.ok(obj.isSkinnedMesh, `${obj.name} lost its skin`);
-    const { position, normal, skinIndex, skinWeight } = obj.geometry.attributes;
-    const index = obj.geometry.index;
-    const count = index?.count ?? position.count;
-    triangles += count / 3;
-    for (let i = 0; i < count; i += 3) {
-      const a = index ? index.getX(i) : i;
-      for (let corner = 1; corner < 3; corner++) {
-        const b = index ? index.getX(i + corner) : i + corner;
-        for (let axis = 0; axis < 3; axis++) assert.ok(Math.abs(normal.getComponent(a, axis) - normal.getComponent(b, axis)) < 1e-6);
-      }
-    }
-    for (let i = 0; i < position.count; i++) {
-      let weight = 0;
-      for (let j = 0; j < 4; j++) {
-        assert.ok(skinIndex.getComponent(i, j) < obj.skeleton.bones.length);
-        weight += skinWeight.getComponent(i, j);
-      }
-      assert.ok(Math.abs(weight - 1) < 1e-4, `${obj.name}: invalid skin weights`);
-    }
-  });
-  assert.ok(triangles > 1000 && triangles <= 12000, `${triangles} triangles exceeds the game budget`);
 });
 
 test("tailored mesh surfaces have outward-facing topology", async () => {

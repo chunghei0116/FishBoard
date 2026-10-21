@@ -19,7 +19,7 @@ function release(root: T.Object3D) {
   });
   textures.forEach((texture) => texture.dispose());
 }
-/** Load the low-poly derivative of the Blender rig; preserve authored playback. */
+/** Play the original low-poly island angler's authored idle and walk loops. */
 export function createCharacter(
   scene: T.Scene,
   onError?: (error: unknown) => void,
@@ -32,7 +32,7 @@ export function createCharacter(
     idle: T.AnimationAction | null = null,
     walk: T.AnimationAction | null = null;
   new GLTFLoader().load(
-    "/models/hoodie-character-low-poly.glb",
+    "/models/island-angler.glb",
     (gltf) => {
       if (disposed) {
         release(gltf.scene);
@@ -43,7 +43,7 @@ export function createCharacter(
       model.position.y += 0.06 - bounds.min.y;
       model.traverse((o) => {
         if (o instanceof T.Mesh) {
-          o.castShadow = !o.name.includes("Subtle_cheek");
+          o.castShadow = true;
           o.receiveShadow = true;
           o.frustumCulled = false;
           for (const material of Array.isArray(o.material) ? o.material : [o.material]) {
@@ -57,7 +57,7 @@ export function createCharacter(
         walkClip = T.AnimationClip.findByName(gltf.animations, "Walk");
       if (!idleClip || !walkClip) {
         onError?.(
-          new Error("Blender character is missing Idle or Walk animation"),
+          new Error("Island character is missing Idle or Walk animation"),
         );
         return;
       }

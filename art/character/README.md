@@ -1,25 +1,33 @@
-# Fishboard Blender character
+# Island angler · original low-poly character
 
-`hoodie-character.blend` is the editable Blender 5.2 source, with named materials, smooth meshes, skin weights, a 15-bone armature, Idle/Walk actions, and a portrait lighting setup. The saved scene previews Idle. Walk is available as an action and a muted NLA track.
+The island uses `public/models/island-angler.glb`, a newly modelled character made from deliberately simple geometry. It is not a decimated version of the earlier hoodie model.
 
-`../../public/models/hoodie-character.glb` is the full-detail export. The island loads `hoodie-character-low-poly.glb`, a derivative with 8,575 triangles, flat face normals and solid colours instead of fabric textures. It keeps the cream hoodie, cargo trousers, backpack, original skin weights, and Idle/Walk clips. The mixer blends Idle and Walk and synchronizes the walk phase to movement distance.
+## Design
 
-After exporting changes from Blender, regenerate the runtime model with:
+- Sand-coloured, eight-sided bucket hat with a broad ten-sided brim, olive band and small brass badge.
+- Calm face with small dark eyes, angular smile, cropped brown hair and warm skin. The head is slightly oversized to read clearly from the island camera.
+- Sea-blue short-sleeved shirt, open olive fishing vest, two utility pockets and a small field notebook.
+- Dark teal shorts, cream socks and brown deck boots. Bevelled edges keep the solid shapes from looking like sharp cubes.
+- Small rust canvas equipment pack with a sand flap, brass clasp, shoulder straps and a rolled blue mat.
+- Solid matte colours, visible triangular facets and no fabric or normal textures. Colours complement the island's sand, greenery and water.
+
+The exported character has **1,552 triangles**, is approximately **225 KB**, and stands about 2.4 island units tall, facing +Z with Y up. It uses a transform hierarchy for the torso, head, hips, knees, arms and elbows; it requires no skinning or external textures.
+
+## Build and animation
+
+`build-island-angler.mjs` is the editable modelling source. It uses the existing Three.js dependency, creates the geometry, then exports a standalone GLB with named `Idle` and `Walk` clips:
 
 ```sh
-node art/character/build-low-poly.mjs
+npm run build:character
+node --test tests/island-angler.test.mjs tests/character-motion.test.mjs
 ```
 
-The generator uses the pinned development dependencies glTF Transform and meshoptimizer. It preserves the authored rig and animations and enforces a 12,000-triangle ceiling. The detailed `.blend` and original `.glb` remain the editable source; do not overwrite them with the simplified asset.
+The script overwrites only `public/models/island-angler.glb`. No Blender installation or extra asset-processing packages are required.
 
-Edit the `.blend` in Blender, then export selected character meshes and the armature as glTF Binary with skinning and animation enabled. Preserve the `Idle` and `Walk` clip names. Forward is Blender -Y, up is Z; the exporter converts to Three.js coordinates.
+Animation is sampled from the shared `lib/character-motion.ts` gait. Idle includes a small breath and head turn; Walk includes opposing arm/leg swings, backward knee bends and slight torso lean. Both clips loop without a pose jump. The existing runtime mixer blends the clips and ties walk phase to distance, preserving island controls, heading, collision and station interactions. Reduced motion displays the resting pose.
 
-`build_hoodie_character.py` recreates the hoodie-and-cargo character from the reference. Re-running it **overwrites the generated .blend and .glb**, so save subsequent hand edits separately first:
+The tests load the exported asset, check its scale, flat face normals, equipment and triangle budget, then sample idle/walk blends to verify the loop seam, knee direction and foot clearance. Regenerate and inspect the asset after editing proportions.
 
-```sh
-/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python-exit-code 1 --python art/character/build_hoodie_character.py
-```
+## Earlier Blender reference
 
-Set `FISHBOARD_SKIP_RENDER=1` to regenerate without the portrait render. Model generation uses only Blender's built-in tools; no third-party models or add-ons are required.
-
-Checks: `node --test tests/blender-character.test.mjs` checks valid skinning/animation data, asset vertex limits, outward-facing cloth topology, and knee direction throughout the exported walk.
+The previous `hoodie-character.blend`, portrait, Python authoring scripts and `public/models/hoodie-character.glb` remain as source/reference material. They are not loaded by the island. Their original rig/topology tests remain in `tests/blender-character.test.mjs`.
