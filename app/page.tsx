@@ -1,4 +1,5 @@
-import IslandExperience from "@/components/island/island-experience";
+import Home from "@/components/fishlog/home";
+import { GeistSans } from "geist/font/sans";
 export default function Page() {
-  return <IslandExperience />;
+  return <Home className={GeistSans.variable} />;
 }

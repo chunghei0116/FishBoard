@@ -1,79 +1,124 @@
-# FISH LOG · Personal fish collection
+# Fishboard · 釣魚日和
 
-A private fishing journal with a pixel aquarium and catch timeline. The UI follows the supplied reference: warm off-white surfaces, monospaced typography, thin borders and small blue accents.
+以藍白色系呈現的私人釣魚日誌。記下每次漁獲、收藏像素魚種、重訪釣獲地點，並保存自己的 Three.js 釣組配置。支援桌面、手機及深淺色主題。
 
-## Fisherman’s Island
+## 畫面
 
-The home screen is a public, playable Three.js island with original procedural scenery and character art. Walk with WASD / arrow keys, click the ground or an object label to find a route, and press E near a station. Phones and touch devices include a bottom-left virtual thumbstick: drag in any direction, push further to walk faster, and release to stop. The stick captures one pointer and resets on cancellation, focus loss, backgrounding or opening a feature panel. The Your island menu also opens each feature directly.
+2026-10-13 更新。以下是目前 UI 元件使用 repo 內示範資料的本機截圖，沒有私人帳戶資料；截圖不代表真實帳戶或實體手機驗收。
 
-Game HUD text does not select or show a long-press callout during touch play. Feature panels retain text selection and normal form editing. The joystick uses safe-area spacing and remains available in phone landscape.
+### 桌面主頁
 
-On phones, launch starts with an island overview and eases into a 2.2× closer view over about two seconds. The introductory heading fades out to clear the play area. The camera follows the player while walking; reduced motion starts directly at the closer view. Desktop keeps its fixed overview, heading, keyboard controls and no joystick.
+主視覺 → 水族箱與收藏摘要 → 漁獲紀錄。主頁在紀錄列表結束；「新增漁獲」集中在導覽列。
 
-- Red toolbox: existing catch photo upload and pixel-fish generation.
-- Glass aquarium: existing fish collection, placement, and details.
-- Journal table: catch timeline and filters.
-- Map board: existing fishing-waters view.
-- Cabin: existing settings and account controls.
+![桌面主頁：海岸主視覺、水族箱、收藏摘要與漁獲紀錄列表](docs/screenshots/home-desktop.jpg)
 
-The island can be explored without signing in. Feature panels retain Firebase sign-in and owner-only data access. The small fish in the island scenery are decorative; saved catches are shown inside the authenticated aquarium. Gameplay pauses while panels are open. Reduced motion disables decorative movement.
+### 手機主頁與紀錄
 
-Run `npm run test:island` for boundary, movement, interaction-range, and route-finding checks.
+左下新增按鈕與右下四個導覽項目分開。向下捲動時，新增按鈕向左收起；紀錄保留魚種、日期、地點與長度。
 
-The player is an original low-poly island angler: sand bucket hat, sea-blue shirt, olive fishing vest, shorts and a canvas equipment pack. Its articulated Idle/Walk loops follow movement distance. See [character design and asset workflow](art/character/README.md) for regeneration and geometry checks.
+<p>
+  <img src="docs/screenshots/home-mobile.jpg" alt="手機主頁及分離式底部導覽" width="320" />
+  <img src="docs/screenshots/catch-log-mobile.jpg" alt="手機漁獲搜尋、篩選及紀錄列表" width="320" />
+</p>
 
-## Features
+### 設定與 Three.js loadout
 
-- Firebase Google sign-in. Collections are isolated by Firebase user ID.
-- Firestore catch records at `users/{uid}/catches/{id}`. Server endpoints verify Firebase ID tokens; Firestore also enforces owner rules.
-- Authenticated Cloudinary images. Image endpoints verify document ownership and the account-specific asset path; credentials stay server-side.
-- Photo-to-pixel-fish generation through the existing OpenAI Images integration. JPG/PNG/WebP up to 10 MB.
-- Independent fish swimming, turns and resting. Motion respects reduced-motion preferences and pauses off screen, in background tabs and while dragging or using the keyboard.
-- Manual placement persists; autonomous swimming does not write each animation frame to Firestore.
-- Responsive aquarium, timeline, collection and filters. Empty collections show clearly labelled sample fish, never counted or saved.
-- The existing record fields are name, date, position and image references. Time, location and length show as unrecorded; Map explains when no location data is available.
+裝備配置放在設定頁，保留真實 3D 模型與五個可編輯配件。
 
-## Local development
+![設定頁的 Three.js 釣組與釣竿、魚輪、主線、前導線及擬餌配置](docs/screenshots/settings-loadout-desktop.jpg)
 
-Requires Node.js 22.13 or newer.
+## 功能
+
+- **漁獲紀錄**：新增、編輯及刪除漁獲；保存原相、日期／時段、地點、尺寸、備註與裝備快照。刪除須確認。
+- **搜尋與篩選**：搜尋魚種或地點，組合魚種、地點及年份篩選，顯示結果數量並支援清除。
+- **像素水族箱**：每個已釣獲魚種只入住一尾魚；選取查看收藏資料，可暫停游魚，尊重減少動態設定。
+- **魚種圖鑑**：查看魚種資料、釣獲次數、最長紀錄與釣獲歷史。重複釣獲共用同一魚種。
+- **釣獲地圖**：MapLibre／OpenFreeMap 地圖。點選 marker 才篩選該位置漁獲；同名但不同座標的位置分開，支援「顯示全部」。
+- **3D 裝備**：設定頁內編輯釣竿、魚輪、主線、前導線及擬餌／魚餌；hover、focus 或選取可高亮配件。只有未儲存改動才顯示儲存提示。
+- **照片與像素魚**：新魚種以原相產生透明像素魚；已收藏魚種再新增漁獲會沿用現有像素魚。
+- **私人帳戶**：Google 登入、按使用者分隔的資料與圖片、JSON 備份匯出。
+- **響應式 UI**：桌面側欄、手機分離式動畫導覽、深淺色主題。頁面使用靜態底色，水族箱游魚及 3D 釣組保留。
+
+新增漁獲會保存當時的裝備快照；後續修改個人 loadout 不會改寫舊漁獲。
+
+## 頁面
+
+| 頁面 | 路徑 |
+| --- | --- |
+| 主頁／漁獲紀錄 | `/`、`/#catch-log` |
+| 魚種圖鑑 | `/collection` |
+| 魚種詳情 | `/species/[id]` |
+| 漁獲詳情 | `/catches/[id]` |
+| 釣獲地圖 | `/map` |
+| 設定／裝備配置 | `/settings`、`/settings#loadout` |
+| 新增漁獲直接入口 | `/add` |
+
+訪客先看到 Google 登入頁。導覽沒有獨立 loadout 頁；舊 `/gear` 連結重新導向 `/settings#loadout`。
+
+## 技術架構
+
+| 部分 | 實作 |
+| --- | --- |
+| 網頁 | React、TypeScript、Next.js／Vinext |
+| UI 與動態 | CSS、Geist、Framer Motion、GSAP ScrollTrigger |
+| 水族箱／裝備 | 2D 像素游魚、Three.js GLB 釣組 |
+| 地圖 | MapLibre GL、OpenFreeMap |
+| 登入／紀錄 | Firebase Google Auth、Firestore REST |
+| 私人圖片 | Cloudinary authenticated storage，經檢查擁有者的圖片 API 讀取 |
+| 像素魚生成 | Cloudflare Workers AI；Vercel 使用 REST，Cloudflare 可使用原生 binding |
+| 部署 | Vercel 的 Next.js build；另保留 Cloudflare／Vinext 設定 |
+
+目前首頁使用 `components/fishlog/` 的日誌介面。舊 D1／R2／OpenAI collection 仍保留為 legacy 程式碼，不是目前首頁；舊資料的遷移規則見服務文件。
+
+## 本機開發
+
+需要 Node.js **22.13 或以上**。
 
 ```sh
 npm ci
+cp .env.example .dev.vars
+```
+
+在本機 `.dev.vars` 填寫 Firebase 公開登入設定、Firestore 服務帳戶及 Cloudinary 伺服器設定。`FISHBOARD_ORIGIN` 必須與開啟網站的 scheme、hostname 和 port 完全一致；範例使用 `http://127.0.0.1:5173`。
+
+```sh
 npm run dev
 ```
 
-Google sign-in is real in local development. Firebase allows `localhost` and `127.0.0.1`. The public Web App configuration is in `lib/firebase-client.ts`; it contains no administrative credentials.
+本機預設使用 Vinext，通常在 port 5173 啟動；以終端印出的網址為準。Google Authentication 亦須授權該 hostname。新日誌使用真正的 Firebase 登入，沒有以 Sites 模擬登入替代私人帳戶。
 
-Generation requires server-only values in the Git-ignored `.dev.vars` file (see `.env.example`): `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` and `OPENAI_API_KEY`. Keep existing configured values when adding a key. Image generation incurs provider usage charges.
+像素魚生成另需 Workers AI 設定及 `GENERATION_ENABLED=true`。開發時使用原生遠端 AI binding 的方式、REST 設定、服務權限及完整驗收步驟，見 [服務設定](docs/service-setup.md)。AI 推論、圖片儲存及傳送可能產生服務用量費用；未設定生成服務時，不會虛構像素魚。
+
+Vercel 使用相同名稱的 server environment variables；本機 Next.js 環境可放在忽略的 `.env.local`。伺服器私鑰與 token 不可使用 `NEXT_PUBLIC_`，也不要提交 `.dev.vars`、`.env.local` 或憑證檔案。
+
+## 建置與檢查
 
 ```sh
-npm run test:firebase
-npm run test:storage
-npm run test:motion
+npm test
 npx tsc --noEmit
-npm run build
+npm run lint
 ```
 
-## Service setup and verification
-
-Verified on 2026-10-06:
-
-- Firebase project `fishboard-36a96`: Google provider enabled; default Standard Firestore database created in `asia-east2` (Hong Kong).
-- `firestore.rules` published: owner-only access, schema checks, immutable image references and position-only updates.
-- Live Google sign-in, Firestore create, API list and position persistence passed. Anonymous access, cross-account reads and forged image-reference updates were rejected. Temporary test records were cleaned up.
-- Cloudinary local credentials configured in owner-readable `.dev.vars`. Authenticated Admin API ping, a tiny test image upload and signed image read returned HTTP 200. The test image was cleaned up.
-- Automated token-verification, storage rollback, account isolation and fish-motion checks passed.
-
-OpenAI generation has not been exercised because no OpenAI key is configured locally. Firebase and Cloudinary are connected; the complete photo-to-generated-fish flow still requires that key.
-
-## Deployment and old data
-
-Vercel uses `vercel.json` → `npm run build:vercel` (`next build --webpack`) and the `.next` output directory. Do not use the default `npm run build` for Vercel: it runs Vinext and does not produce Next.js's `routes-manifest.json`. The Next.js build maps the API's `cloudflare:workers` environment import to server-only environment variables; it does not change the island or its feature panels.
+Vercel 的正式建置與 `vercel.json` 一致：
 
 ```sh
 npm run build:vercel
 ```
 
-Local development and Cloudflare/Sites builds retain Vinext (`npm run dev` / `npm run build`) and native Worker bindings. Production must receive the Cloudinary credentials and OpenAI key as server secrets; local `.dev.vars` is not deployed. For local Next.js verification, use an ignored `.env.local`. Never prefix server secrets with `NEXT_PUBLIC_`. Add the actual deployed hostname to Firebase Authentication's authorized domains before using Google login there. Build success does not indicate deployment.
+Cloudflare／Vinext 建置保留以下入口：
 
-New catch records use Firestore. Existing D1 records, migrations and R2 objects are preserved, but are not automatically imported or shown under Firebase accounts. A later migration needs an explicit mapping from the old account IDs to Firebase UIDs. No service-account key or unsigned Cloudinary upload preset is needed.
+```sh
+npm run build
+```
+
+測試涵蓋漁獲驗證及篩選、主頁範圍、手機導覽捲動、游魚範圍、GLB 配件、裝備儲存、地點觸控選取、圖片處理、帳戶隔離與儲存失敗復原。自動測試與本機截圖不等同線上服務或實體手機驗收。
+
+## 文件
+
+- [UI 設計與互動規格](docs/design/fishboard-ui-design.md)
+- [全站 UI audit 與主頁調整](docs/design/2026-10-13-ui-audit.md)
+- [服務設定、歷次驗證與部署](docs/service-setup.md)
+- [游魚行為規格](docs/design/swimming-behaviour.md)
+- [海岸照片來源與授權](public/fish/landing-coast-credit.txt)
+
+README 截圖放在 `docs/screenshots/`，尺寸及擷取方式見 [截圖說明](docs/screenshots/README.md)。

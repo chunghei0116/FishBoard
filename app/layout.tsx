@@ -1,27 +1,38 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "./island.css";
-
-export const metadata: Metadata = {
-  title: "FISH LOG · Fisherman’s Island",
-  description: "我的水域，我的漁獲。將每次釣魚回憶，收藏成專屬像素魚類圖鑑。",
-  other: {
-    "codex-preview": "development",
-  },
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-  },
+import "./fishlog.css";
+import "./fishboard-ui.css";
+import "./fishboard-home.css";
+import { FishLogProvider } from "@/components/fishlog/provider";
+import { JournalTheme } from "@/components/fishlog/theme";
+import { LoadingProvider } from "@/components/fishlog/loading-dialog";
+import Shell from "@/components/fishlog/shell";
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
-
+export const metadata: Metadata = {
+  title: "釣魚日誌 · 我的水域，我的漁獲。",
+  description: "留住每一次漁獲，收藏每一個水邊故事。",
+  icons: { icon: "/favicon.svg" },
+};
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="zh-HK">
-      <body className="antialiased">{children}</body>
+    <html lang="zh-HK" suppressHydrationWarning>
+      <body>
+        <JournalTheme>
+          <LoadingProvider>
+            <FishLogProvider>
+              <Shell>{children}</Shell>
+            </FishLogProvider>
+          </LoadingProvider>
+        </JournalTheme>
+      </body>
     </html>
   );
 }

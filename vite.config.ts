@@ -16,6 +16,7 @@ const managedLinux = readExecutionProfile() === "managed-linux";
 
 const localBindingConfig = {
   main: "./build/sites-worker.ts",
+  ...(process.env.FISHBOARD_ENABLE_AI_BINDING === "true" ? { ai: { binding: "AI", remote: true } } : {}),
   compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [
@@ -62,7 +63,7 @@ export default defineConfig(async ({ command }) => {
     },
     plugins: [
       vinext(),
-      sites({ mockAuth: false }),
+      sites({ mockAuth: !managedLinux }),
       connectorPreview(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },

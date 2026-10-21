@@ -1,855 +1,130 @@
-"use client";
-import { FirebaseSession } from '@/components/firebase-session';
-import { AuthenticatedImage } from '@/components/authenticated-image';
-import { firebaseAuth, firebaseRequest } from '@/lib/firebase-client';
-import { signOut } from 'firebase/auth';
+'use client';
 
-import Link from "next/link";
-import { FishSwimmer } from "@/components/fish-swimmer";
-import { useEffect, useRef, useState } from "react";
-import {
-  Plus,
-  Upload,
-  Sparkles,
-  LoaderCircle,
-  Check,
-  ImageIcon,
-  Settings,
-  ChevronDown,
-  ArrowRight,
-  Clock,
-  MapPin,
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-type Catch = {
-  id: string;
-  name: string;
-  date: string;
-  x: number;
-  y: number;
-  image: string;
-  source?: string;
-  sample?: boolean;
-  sprite?: string;
-  english?: string;
-  time?: string;
-  location?: string;
-  length?: number;
-};
-const examples: Catch[] = [
-  {
-    id: "demo-yellow",
-    name: "黃腳鱲",
-    english: "YELLOWFIN SEABREAM",
-    date: "2026-10-04",
-    time: "19:42",
-    location: "Cheung Sha Wan",
-    length: 21,
-    x: 0.46,
-    y: 0.44,
-    sprite: "yellow",
-    image: "",
-    sample: true,
-  },
-  {
-    id: "demo-black",
-    name: "黑鯛",
-    english: "BLACK SEABREAM",
-    date: "2026-09-28",
-    time: "16:20",
-    location: "Victoria Harbour",
-    length: 18,
-    x: 0.12,
-    y: 0.28,
-    sprite: "black",
-    image: "",
-    sample: true,
-  },
-  {
-    id: "demo-red",
-    name: "石狗公",
-    english: "RED SCORPIONFISH",
-    date: "2026-09-21",
-    time: "07:15",
-    location: "Tung Lung Chau",
-    length: 16,
-    x: 0.74,
-    y: 0.43,
-    sprite: "red",
-    image: "",
-    sample: true,
-  },
-  {
-    id: "demo-bass",
-    name: "鱸魚",
-    english: "JAPANESE SEABASS",
-    date: "2026-09-14",
-    time: "18:03",
-    location: "Sai Kung",
-    length: 42,
-    x: 0.9,
-    y: 0.65,
-    sprite: "bass",
-    image: "",
-    sample: true,
-  },
-  {
-    id: "demo-jack",
-    name: "池魚",
-    english: "JAPANESE JACK MACKEREL",
-    date: "2026-09-03",
-    time: "19:11",
-    location: "Kwun Tong Typhoon Shelter",
-    length: 15,
-    x: 0.73,
-    y: 0.9,
-    sprite: "jack",
-    image: "",
-    sample: true,
-  },
-  {
-    id: "demo-rabbit",
-    name: "臭肚魚",
-    english: "RABBITFISH",
-    date: "2026-08-27",
-    time: "12:36",
-    location: "Sham Wan",
-    length: 22,
-    x: 0.48,
-    y: 0.82,
-    sprite: "rabbit",
-    image: "",
-    sample: true,
-  },
-];
-function FishArt({ item }: { item: Catch }) {
-  return item.sprite ? (
-    <span
-      role="img"
-      aria-label={item.name}
-      className={`fish-art sprite sprite-${item.sprite}`}
-    />
-  ) : (
-    <AuthenticatedImage
-      className="fish-art"
-      src={item.image}
-      alt={item.name}
-      draggable={false}
-    />
-  );
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fish, Plus, BookOpen, Upload, Sparkles, LoaderCircle, ArrowRight, Pause, Play, Waves, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import Link from 'next/link';
+import Aquarium, { type AquariumFish } from './aquarium';
+
+type Catch = AquariumFish & { date: string; x: number; y: number; source?: string };
+const demo: Catch = { id: 'sample-blue', name: '黑鯛 · 小藍', date: '', x: .5, y: .45, image: '/sample-fish.png', sample: true };
+const demoPair: Catch[] = [demo, { ...demo, id: 'sample-silver', name: '黑鯛 · 小銀' }];
 async function request(url: string, options?: RequestInit) {
-  const r = await firebaseRequest(url, options);
-  if (!r.headers.get("content-type")?.includes("application/json"))
-    throw Error("收藏室暫時連線唔到，請重新整理再試。");
-  const data = (await r.json()) as {
-    error?: string;
-    items: Catch[];
-    item: Catch;
-    generationReady: boolean;
-  };
-  if (!r.ok) throw Error(data.error || "暫時未能儲存，請再試一次。");
+  const response = await fetch(url, options);
+  if (!response.headers.get('content-type')?.includes('application/json')) throw Error('暫時連線唔到，請重新整理再試。');
+  const data = await response.json() as { error?: string; items: Catch[]; item: Catch; generationReady: boolean };
+  if (!response.ok) throw Error(data.error || '暫時未能儲存，請再試一次。');
   return data;
 }
-type CollectionProps = {initialTab?:string;initialAction?:'upload'|'settings';embedded?:boolean};
-export default function Collection(props:CollectionProps){return <FirebaseSession><Home {...props}/></FirebaseSession>}
-function Home({initialTab='home',initialAction,embedded=false}:CollectionProps) {
-  const [items, setItems] = useState<Catch[]>([]),
-    [open, setOpen] = useState(initialAction === "upload"),
-    [file, setFile] = useState<File | null>(null),
-    [photo, setPhoto] = useState(""),
-    [name, setName] = useState(""),
-    [date, setDate] = useState(""),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [notice, setNotice] = useState(""),
-    [ready, setReady] = useState<boolean | null>(null),
-    [reveal, setReveal] = useState<Catch | null>(null),
-    [detail, setDetail] = useState<Catch | null>(null),
-    [saving, setSaving] = useState<string | null>(null),
-    [loaded, setLoaded] = useState(false),
-    [sample, setSample] = useState<Catch | null>(null);
-  const [tab, setTab] = useState(initialTab),
-    [settings, setSettings] = useState(initialAction === "settings"),
-    [species, setSpecies] = useState(""),
-    [location, setLocation] = useState(""),
-    [year, setYear] = useState("");
-  const showingExamples = loaded && items.length === 0;
-  const displayItems = showingExamples ? examples : items;
-  const logItems = [...displayItems]
-    .filter(
-      (i) =>
-        (!species || i.name === species) &&
-        (!location || i.location === location) &&
-        (!year || i.date.startsWith(year)),
-    )
-    .sort((a, b) => b.date.localeCompare(a.date));
-  const board = useRef<HTMLDivElement>(null),
-    drag = useRef<{
-      item: Catch;
-      startX: number;
-      startY: number;
-      moved: boolean;
-    } | null>(null),
-    submitting = useRef(false);
+
+export default function Collection() {
+  const [items, setItems] = useState<Catch[]>([]);
+  const [open, setOpen] = useState(false);
+  const [atlas, setAtlas] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [photo, setPhoto] = useState('');
+  const [name, setName] = useState('');
+  const [date, setDate] = useState(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Hong_Kong' }));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [ready, setReady] = useState<boolean | null>(null);
+  const [reveal, setReveal] = useState<Catch | null>(null);
+  const [detail, setDetail] = useState<Catch | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [samples, setSamples] = useState<Catch[]>(demoPair);
+  const [paused, setPaused] = useState(false);
+  const submitting = useRef(false);
+
+  const load = useCallback(() => request('/api/catches').then(data => {
+    setItems(data.items); setReady(data.generationReady); setNotice(''); setLoadError(false);
+  }).catch((error: Error) => {
+    setNotice(error.message); setLoadError(true);
+  }).finally(() => setLoaded(true)), []);
   useEffect(() => {
-    request("/api/catches")
-      .then((d) => {
-        setDate(
-          new Date().toLocaleDateString("en-CA", {
-            timeZone: "Asia/Hong_Kong",
-          }),
-        );
-        setItems(d.items);
-        setReady(d.generationReady);
-        setLoaded(true);
-      })
-      .catch((e) => {
-        setDate(
-          new Date().toLocaleDateString("en-CA", {
-            timeZone: "Asia/Hong_Kong",
-          }),
-        );
-        setNotice(e.message);
-        setLoaded(true);
-      });
-  }, []);
-  useEffect(
-    () => () => {
-      if (photo) URL.revokeObjectURL(photo);
-    },
-    [photo],
-  );
+    void load();
+  }, [load]);
+  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo); }, [photo]);
   useEffect(() => {
-    const context = (
-      document as unknown as {
-        modelContext?: {
-          registerTool: (
-            tool: unknown,
-            options: { signal: AbortSignal },
-          ) => unknown;
-        };
-      }
-    ).modelContext;
+    const context = (document as Document & { modelContext?: { registerTool: (...args: unknown[]) => Promise<unknown> } }).modelContext;
     if (!context?.registerTool) return;
     const lifecycle = new AbortController();
-    Promise.resolve(
-      context.registerTool(
-        {
-          name: "start_catch_upload",
-          description:
-            "Open the fish photo upload form; does not upload or generate a badge.",
-          inputSchema: {
-            type: "object",
-            properties: {},
-            additionalProperties: false,
-          },
-          annotations: { readOnlyHint: false },
-          execute(input: unknown) {
-            if (
-              !input ||
-              typeof input !== "object" ||
-              Object.keys(input).length
-            )
-              throw Error("Expected an empty object");
-            setOpen(true);
-            return { status: "upload_form_open" };
-          },
-        },
-        { signal: lifecycle.signal },
-      ),
-    ).catch(() => {});
+    Promise.resolve(context.registerTool({
+      name: 'start_catch_upload', description: 'Open the fish photo upload form; does not upload or generate a fish.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false }, annotations: { readOnlyHint: false },
+      execute(input: unknown) {
+        if (!input || typeof input !== 'object' || Object.keys(input).length) throw Error('Expected an empty object');
+        setOpen(true); return { status: 'upload_form_open' };
+      },
+    }, { signal: lifecycle.signal })).catch(() => {});
     return () => lifecycle.abort();
   }, []);
+  const residents = useMemo(() => [...items.filter(item => item.id !== reveal?.id), ...samples], [items, reveal, samples]);
+  const selectFish = useCallback((fish: AquariumFish) => {
+    const item = fish.sample ? demoPair.find(item => item.id === fish.id) : items.find(item => item.id === fish.id);
+    if (item) setDetail(item);
+  }, [items]);
   function choose(f?: File) {
     if (!f) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
-      setError("請選擇 JPG、PNG 或 WebP 圖片。");
-      return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type) || !f.size || f.size > 10 * 1024 * 1024) {
+      setError('請選擇 10 MB 以下嘅 JPG、PNG 或 WebP 圖片。'); return;
     }
-    if (f.size > 10 * 1024 * 1024) {
-      setError("圖片太大，請選擇 10 MB 以下嘅相片。");
-      return;
-    }
-    setFile(f);
-    setPhoto(URL.createObjectURL(f));
-    setError("");
+    setFile(f); setPhoto(URL.createObjectURL(f)); setError('');
   }
   async function generate() {
-    if (!file || submitting.current) return;
-    submitting.current = true;
-    setBusy(true);
-    setError("");
+    if (!file || submitting.current || ready !== true) return;
+    submitting.current = true; setBusy(true); setError('');
     try {
       const body = new FormData();
-      body.append("image", file);
-      body.append("name", name.trim() || "我的漁獲");
-      body.append("date", date);
-      const d = await request("/api/catches", { method: "POST", body });
-      setItems((i) => [...i, d.item]);
-      setSpecies("");
-      setLocation("");
-      setYear("");
-      setTab("home");
-      setOpen(false);
-      setReveal(d.item);
-      setFile(null);
-      setPhoto("");
-      setName("");
-      setSample(null);
-      setNotice("新襟章已儲存，拖到魚缸入面吧！");
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-      submitting.current = false;
-    }
+      body.append('image', file); body.append('name', name.trim() || '我的漁獲'); body.append('date', date);
+      const data = await request('/api/catches', { method: 'POST', body });
+      setItems(all => [...all, data.item]); setOpen(false); setReveal(data.item); setFile(null); setPhoto(''); setName('');
+    } catch (e) { setError((e as Error).message); }
+    finally { setBusy(false); submitting.current = false; }
   }
-  async function place(item: Catch, x: number, y: number) {
-    const next = {
-      ...item,
-      x: Math.max(0, Math.min(1, x)),
-      y: Math.max(0, Math.min(1, y)),
-    };
+  function release() {
+    if (reveal?.sample) setSamples(current => current.some(item => item.id === reveal.id) ? current : [...current, reveal]);
+    setNotice(reveal?.sample ? '示範魚入缸喇，唔會計入你嘅收藏。' : '新夥伴入缸喇，點魚仔可以睇返釣獲紀錄。');
     setReveal(null);
-    if (item.sample) {
-      setSample(next);
-      setNotice("呢枚係示範襟章，唔會計入你嘅收藏。");
-      return;
-    }
-    setItems((all) => all.map((i) => (i.id === item.id ? next : i)));
-    setSaving(item.id);
-    try {
-      await request("/api/catches/" + item.id, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ x: next.x, y: next.y }),
-      });
-      setNotice("位置已儲存。");
-    } catch (e) {
-      setItems((all) => all.map((i) => (i.id === item.id ? item : i)));
-      setNotice((e as Error).message);
-    } finally {
-      setSaving(null);
-    }
   }
-  function position(e: React.PointerEvent) {
-    const b = board.current!.getBoundingClientRect();
-    const w = window.innerWidth < 700 ? 92 : 150;
-    return {
-      x: Math.max(0, Math.min(1, (e.clientX - b.left - w / 2) / (b.width - w))),
-      y: Math.max(0, Math.min(1, (e.clientY - b.top - 50) / (b.height - 100))),
-    };
-  }
-  function start(e: React.PointerEvent<HTMLButtonElement>, item: Catch) {
-    if (saving || e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { item, startX: e.clientX, startY: e.clientY, moved: false };
-  }
-  function moving(e: React.PointerEvent) {
-    if (!drag.current) return;
-    if (
-      Math.hypot(
-        e.clientX - drag.current.startX,
-        e.clientY - drag.current.startY,
-      ) < 5 &&
-      !drag.current.moved
-    )
-      return;
-    drag.current.moved = true;
-    if (reveal) {
-      (e.currentTarget as HTMLElement).style.transform =
-        `translate(${e.clientX - drag.current.startX}px,${e.clientY - drag.current.startY}px)`;
-      return;
-    }
-    const p = position(e),
-      item = { ...drag.current.item, ...p };
-    if (item.sample) setSample(item);
-    else setItems((all) => all.map((i) => (i.id === item.id ? item : i)));
-  }
-  function end(e: React.PointerEvent) {
-    const d = drag.current;
-    if (!d) return;
-    drag.current = null;
-    (e.currentTarget as HTMLElement).style.transform = "";
-    if (d.moved) {
-      const b = board.current!.getBoundingClientRect();
-      if (
-        e.clientX < b.left ||
-        e.clientX > b.right ||
-        e.clientY < b.top ||
-        e.clientY > b.bottom
-      ) {
-        if (!reveal) {
-          if (d.item.sample) setSample(d.item);
-          else
-            setItems((all) =>
-              all.map((i) => (i.id === d.item.id ? d.item : i)),
-            );
-        }
-        return;
-      }
-      const p = position(e);
-      void place(d.item, p.x, p.y);
-    } else if (!reveal) setDetail(d.item);
-  }
-  function badge(item: Catch, isReveal = false) {
-    const fish = (
-      <button
-        aria-label={`${item.name}，拖放移動或按方向鍵調整位置`}
-        className={"catch " + (isReveal ? "reveal-catch" : "")}
-        onPointerDown={(e) => start(e, item)}
-        onPointerMove={moving}
-        onPointerUp={end}
-        onPointerCancel={() => {
-          drag.current = null;
-          if (item.sample) setSample(item);
-          else setItems((all) => all.map((i) => (i.id === item.id ? item : i)));
-        }}
-        onKeyDown={(e) => {
-          const dirs: Record<string, number[]> = {
-            ArrowLeft: [-0.03, 0],
-            ArrowRight: [0.03, 0],
-            ArrowUp: [0, -0.03],
-            ArrowDown: [0, 0.03],
-          };
-          if (dirs[e.key]) {
-            e.preventDefault();
-            if (!saving)
-              void place(
-                item,
-                item.x + dirs[e.key][0],
-                item.y + dirs[e.key][1],
-              );
-          } else if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            if (isReveal) void place(item, 0.5, 0.45);
-            else setDetail(item);
-          }
-        }}
-      >
-        <FishArt item={item} />
-      </button>
-    );
-    return isReveal ? (
-      fish
-    ) : (
-      <FishSwimmer
-        id={item.id}
-        x={item.x}
-        y={item.y}
-        facesRight={item.sprite === "black" || item.sprite === "jack"}
-      >
-        {fish}
-      </FishSwimmer>
-    );
-  }
-  return (
-    <main className={"club" + (embedded ? " island-collection" : "")}>
-      <header className="masthead">
-        <Link href="/" className="brand">
-          <svg
-            className="brandmark"
-            viewBox="0 0 48 52"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M5 46V37L10 28L17 19L29 7L36 6L39 10V29L37 31V40L41 44L38 47L34 44V40M8 39L12 31L17 26"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinejoin="miter"
-            />
-          </svg>
-          <span>
-            FISH LOG <i />
-            <small>MY WATERS, MY CATCHES.</small>
-          </span>
-        </Link>
-        <nav aria-label="主要導覽">
-          {["home", "collection", "map"].map((t) => (
-            <button
-              key={t}
-              className={tab === t ? "active" : ""}
-              aria-current={tab === t ? "page" : undefined}
-              onClick={() => setTab(t)}
-            >
-              {t.toUpperCase()}
-            </button>
-          ))}
-          <button
-            className="settings-button"
-            aria-label="設定"
-            onClick={() => setSettings(true)}
-          >
-            <Settings size={21} />
-          </button>
-        </nav>
-      </header>
-      {tab === "home" && (
-        <>
-          <section className="aquarium" aria-label="我的魚缸" ref={board}>
-            <div className="tank-count">
-              {String(items.length).padStart(2, "0")} CAUGHT{" "}
-              <span>/ {new Set(items.map((i) => i.name)).size} SPECIES</span>
-              {showingExamples && <small>DEMO AQUARIUM</small>}
-            </div>
-            <div className="sun" />
-            <div className="water-lines">
-              <i />
-              <i />
-              <i />
-            </div>
-            <div className="coral" />
-            {Array.from({ length: 14 }, (_, i) => (
-              <span
-                key={i}
-                className="bubble"
-                style={{
-                  left: `${8 + ((i * 23) % 89)}%`,
-                  top: `${24 + ((i * 17) % 54)}%`,
-                  animationDelay: `${i * 0.7}s`,
-                }}
-              />
-            ))}
-            {displayItems
-              .filter((i) => i.id !== reveal?.id && i.id !== sample?.id)
-              .map((i) => (
-                <div key={i.id}>{badge(i)}</div>
-              ))}
-            {sample && reveal?.id !== sample.id && badge(sample)}
-            <span className="tank-motto">
-              DIFFERENT WATERS
-              <br />
-              SAME OBSESSION.
-            </span>
-            {!loaded && <span className="tank-loading">讀取收藏中…</span>}
-          </section>
-          <a className="scroll-prompt" href="#catch-log">
-            <ChevronDown size={23} />
-            <span>SCROLL FOR CATCH LOG</span>
-          </a>
-        </>
-      )}
-      {tab === "map" ? (
-        <section className="map-empty">
-          <MapPin size={30} />
-          <h1>YOUR FISHING WATERS</h1>
-          <p>現有漁獲未有儲存地點，暫時未能標示在地圖上。</p>
-          <button className="text-button" onClick={() => setTab("home")}>
-            返回我的魚缸 <ArrowRight size={16} />
-          </button>
-        </section>
-      ) : (
-        <section id="catch-log" className="catch-log">
-          <div className="log-heading">
-            <h1>{tab === "collection" ? "COLLECTION" : "CATCH LOG"}</h1>
-            <div className="filters">
-              <button
-                className={!species && !location && !year ? "active" : ""}
-                onClick={() => {
-                  setSpecies("");
-                  setLocation("");
-                  setYear("");
-                }}
-              >
-                ALL
-              </button>
-              <label>
-                <span className="sr-only">魚種</span>
-                <select
-                  aria-label="魚種"
-                  value={species}
-                  onChange={(e) => setSpecies(e.target.value)}
-                >
-                  <option value="">SPECIES</option>
-                  {[...new Set(displayItems.map((i) => i.name))].map((n) => (
-                    <option key={n}>{n}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span className="sr-only">地點</span>
-                <select
-                  aria-label="地點"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                >
-                  <option value="">LOCATION</option>
-                  {[
-                    ...new Set(
-                      displayItems
-                        .map((i) => i.location)
-                        .filter((v): v is string => !!v),
-                    ),
-                  ].map((n) => (
-                    <option key={n}>{n}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span className="sr-only">年份</span>
-                <select
-                  aria-label="年份"
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                >
-                  <option value="">YEAR</option>
-                  {[
-                    ...new Set(
-                      displayItems
-                        .map((i) => i.date.slice(0, 4))
-                        .filter(Boolean),
-                    ),
-                  ]
-                    .sort()
-                    .reverse()
-                    .map((n) => (
-                      <option key={n}>{n}</option>
-                    ))}
-                </select>
-              </label>
-            </div>
-          </div>
-          {showingExamples && (
-            <div className="demo-note">
-              示範漁獲 · 上載第一尾魚，開始你自己的紀錄。
-              <button onClick={() => setOpen(true)}>
-                <Plus size={14} /> 新增漁獲
-              </button>
-            </div>
-          )}
-          <div
-            className={tab === "collection" ? "collection-grid" : "timeline"}
-          >
-            {logItems.map((item) => {
-              const parsed = item.date
-                ? new Date(item.date + "T12:00:00")
-                : null;
-              return (
-                <article className="log-entry" key={item.id}>
-                  <time dateTime={item.date || undefined}>
-                    <b>
-                      {parsed ? String(parsed.getDate()).padStart(2, "0") : "—"}
-                    </b>
-                    <span>
-                      {parsed
-                        ? parsed
-                            .toLocaleDateString("en", { month: "short" })
-                            .toUpperCase()
-                        : "UNDATED"}
-                    </span>
-                    <span>{parsed ? parsed.getFullYear() : ""}</span>
-                  </time>
-                  <span className="timeline-dot" />
-                  <button className="log-card" onClick={() => setDetail(item)}>
-                    <span className="log-fish">
-                      <FishArt item={item} />
-                    </span>
-                    <span className="fish-name">
-                      <b>{item.name}</b>
-                      <small>
-                        {item.english ||
-                          (item.sample ? "DEMO CATCH" : "PERSONAL CATCH")}
-                      </small>
-                    </span>
-                    <span className="log-time">
-                      <Clock size={16} />
-                      {item.time || "未記錄"}
-                    </span>
-                    <span className="log-location">
-                      <MapPin size={16} />
-                      {item.location || "未記錄地點"}
-                    </span>
-                    <span className="log-length">
-                      {item.length ? `${item.length} cm` : "— cm"}
-                    </span>
-                    <ArrowRight className="row-arrow" size={19} />
-                  </button>
-                </article>
-              );
-            })}
-          </div>
-          {!logItems.length && (
-            <p className="empty-log">
-              {loaded ? "沒有符合篩選條件的漁獲。" : "讀取漁獲中…"}
-            </p>
-          )}
-          {!showingExamples && (
-            <button className="add-catch" onClick={() => setOpen(true)}>
-              <Plus size={17} /> 新增漁獲
-            </button>
-          )}
-        </section>
-      )}
-      <div className="notice" role="status">
-        {notice}
-      </div>
-      <footer>
-        MY WATERS, MY CATCHES. <span>FISH LOG · EST. 2026</span>
-      </footer>
-      <Dialog open={settings} onOpenChange={setSettings}>
-        <DialogContent className="upload-dialog">
-          <DialogTitle>FISH LOG · 設定</DialogTitle>
-          <DialogDescription>你的個人漁獲收藏室</DialogDescription>
-          <p className="settings-copy">
-            上載魚相生成像素魚；拖放魚仔或使用方向鍵調整魚缸位置。按魚仔或漁獲紀錄可查看原相。
-          </p>
-          <button
-            className="primary"
-            onClick={() => {
-              setSettings(false);
-              setOpen(true);
-            }}
-          >
-            <Plus size={16} /> 新增漁獲
-          </button>
-          <button className="signout" onClick={() => signOut(firebaseAuth())}>
-            登出收藏室
-          </button>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={open}
-        onOpenChange={(v) => {
-          if (!busy) setOpen(v);
-        }}
-      >
-        <DialogContent
-          className="upload-dialog"
-          showCloseButton={!busy}
-          onInteractOutside={(e) => {
-            if (busy) e.preventDefault();
-          }}
-        >
-          <span className="eyebrow">A NEW CATCH / 新しい出会い</span>
-          <DialogTitle className="dialog-heading">
-            將今日嘅漁獲，變成收藏。
-          </DialogTitle>
-          <DialogDescription>
-            上載一張清楚嘅魚相，AI 會保留外形同花紋，重畫成日系像素魚仔。
-          </DialogDescription>
-          <label
-            className={"upload-zone " + (photo ? "has-photo" : "")}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (!busy) choose(e.dataTransfer.files[0]);
-            }}
-          >
-            {photo ? (
-              <img src={photo} alt="待生成嘅魚相" />
-            ) : (
-              <>
-                <Upload size={28} />
-                <b>揀一張魚相，或者拖入嚟</b>
-                <small>JPG、PNG、WebP · 上限 10 MB</small>
-              </>
-            )}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={busy}
-              onChange={(e) => choose(e.target.files?.[0])}
-            />
-            {photo && <span className="change-photo">更換相片</span>}
-          </label>
-          <div className="form-row">
-            <label>
-              魚名／暱稱
-              <input
-                value={name}
-                maxLength={50}
-                placeholder="例如：第一尾黑鯛"
-                disabled={busy}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-            <label>
-              釣獲日期
-              <input
-                type="date"
-                value={date}
-                required
-                disabled={busy}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </label>
-          </div>
-          {ready === false && (
-            <p className="setup-note">
-              AI 生圖連線尚未設定。你可以先揀相，或者試玩示範襟章。
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="error">
-              {error}
-            </p>
-          )}
-          <button
-            className="primary"
-            disabled={!file || !date || busy || ready === false}
-            onClick={generate}
-          >
-            {busy ? (
-              <LoaderCircle className="spin" size={18} />
-            ) : (
-              <Sparkles size={18} />
-            )}{" "}
-            {busy ? "魚仔變身中…" : "生成我的像素襟章"}
-          </button>
-          {busy && (
-            <p className="waiting">好作品需要少少耐性，請保持視窗開啟。</p>
-          )}
-        </DialogContent>
-      </Dialog>
-      {reveal && (
-        <div className="reveal-stage">
-          <div className="reveal-copy">
-            <span className="eyebrow">
-              {reveal.sample ? "TRY A LITTLE MAGIC" : "NEW CATCH UNLOCKED!"}
-            </span>
-            <h2>{reveal.sample ? "試吓將佢放入魚缸。" : "新夥伴，入手！"}</h2>
-            <p>拖住魚仔，放到魚缸入面。</p>
-          </div>
-          {badge(reveal, true)}
-          <button
-            className="place-button"
-            onClick={() => void place(reveal, 0.5, 0.45)}
-          >
-            <Check size={16} /> 放入魚缸
-          </button>
-        </div>
-      )}
-      <Dialog
-        open={!!detail}
-        onOpenChange={(v) => {
-          if (!v) setDetail(null);
-        }}
-      >
-        <DialogContent className="upload-dialog">
-          <DialogTitle>{detail?.name}</DialogTitle>
-          <DialogDescription>
-            {detail?.sample
-              ? "示範襟章，未計入收藏。"
-              : `釣獲日期：${detail?.date}`}
-          </DialogDescription>
-          {detail && (
-            <div className="detail-images">
-              <FishArt item={detail} />
-              {detail.source && <AuthenticatedImage src={detail.source} alt="原始漁獲照片" />}
-            </div>
-          )}
-          <p className="waiting">
-            <ImageIcon size={16} /> 一張相片，留低一個釣魚故事。
-          </p>
-        </DialogContent>
-      </Dialog>
-    </main>
-  );
+
+  return <><main className="fish-room">
+    <header className="room-header">
+      <Link href="/" className="room-brand"><span className="room-brand-icon"><Fish size={24} strokeWidth={1.6}/></span><span>釣魚日和<small>TSURI BIYORI</small></span></Link>
+      <nav aria-label="收藏室"><span className="room-nav-active"><Waves size={16}/> 保管箱</span><button className="quiet-button" onClick={() => setAtlas(true)}><BookOpen size={16}/> 魚類圖鑑 <span className="nav-count">{items.length}</span></button></nav>
+    </header>
+    <section className="aquarium-workspace" aria-labelledby="room-title" aria-busy={!loaded}>
+      <div className="room-intro"><div><span className="room-eyebrow">FISH STORAGE / BOX 01</span><h1 id="room-title">魚仔<span>保管箱</span></h1><p>釣到、收集，再慢慢認識每一尾。</p></div><div className="resident-count"><strong>{String(items.length).padStart(2, '0')}</strong><span>尾漁獲<br/>已收集</span></div></div>
+      <div className="minimal-fish-frame" aria-label="魚仔水箱"><Aquarium fish={residents} paused={paused} onSelect={selectFish}/></div>
+      <div className="outside-tank-tools"><button className="quiet-button" aria-label={paused ? '繼續動畫' : '暫停動畫'} aria-pressed={paused} onClick={() => setPaused(p => !p)}>{paused ? <Play size={13}/> : <Pause size={13}/>}</button>{samples.length > 0 && <button className="quiet-button" onClick={() => setSamples([])}><X size={12}/> 移走示範魚</button>}</div>
+      <div className="tank-bottom"><div className="tank-caption"><span className="tiny-fish"><Fish size={20} strokeWidth={1.3}/></span><span>{!loaded ? '魚仔準備中…' : items.length ? '每一次出海，都帶一個故事返嚟。' : '水箱準備好喇，等你第一尾漁獲。'}<small>釣った思い出を、ひとつずつ。</small></span></div><button className="add-catch" onClick={() => setOpen(true)}><span><Plus size={20}/></span> 新增漁獲 <ArrowRight size={16}/></button></div>
+      {!items.length && !samples.length && loaded && !loadError && <button className="try-fish" onClick={() => setReveal(demo)}>未出海？先放一尾示範魚試玩 <ArrowRight size={13}/></button>}
+      <div className="room-notice" role="status">{notice}{loadError && <button onClick={() => void load()}>重新讀取</button>}</div>
+      <div className="swimmer-shortcuts" aria-label="魚仔詳情">{residents.map(item => <button key={item.id} onClick={() => selectFish(item)}><img src={item.image} alt="" loading="lazy"/><span>{item.name}</span>{item.sample && <small>示範</small>}</button>)}</div>
+    </section>
+    <footer className="room-footer"><span>留住漁獲，也留住好日子。</span><span>一魚一會 <i>✳</i> EST. 2026</span></footer>
+
+    <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}>
+      <DialogContent className="fish-dialog" showCloseButton={!busy} onInteractOutside={event => { if (busy) event.preventDefault(); }}>
+        <span className="room-eyebrow">A NEW LITTLE FRIEND</span><DialogTitle className="fish-dialog-title">今日釣到邊一尾？</DialogTitle><DialogDescription>上載魚相，保留佢嘅外形同花紋，變成水箱裡嘅像素魚仔。</DialogDescription>
+        <label className={'upload-zone ' + (photo ? 'has-photo' : '')} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (!busy) choose(event.dataTransfer.files[0]); }}>
+          {photo ? <img src={photo} alt="待生成嘅魚相"/> : <><Upload size={25} strokeWidth={1.5}/><b>揀一張魚相，或者拖入嚟</b><small>JPG、PNG、WebP · 上限 10 MB</small></>}
+          <input type="file" aria-label="漁獲照片" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={event => choose(event.target.files?.[0])}/>{photo && <span className="change-photo">更換相片</span>}
+        </label>
+        <div className="form-row"><label>魚名／暱稱<input value={name} maxLength={50} placeholder="例如：第一尾黑鯛" disabled={busy} onChange={event => setName(event.target.value)}/></label><label>釣獲日期<input type="date" value={date} required disabled={busy} onChange={event => setDate(event.target.value)}/></label></div>
+        {ready === false && <p className="setup-note">魚仔變身功能尚未啟用。你可以先放一尾示範魚試玩。</p>}{error && <p role="alert" className="form-error">{error}</p>}
+        <button className="fish-primary" disabled={!file || !date || busy || ready !== true} onClick={() => void generate()}>{busy ? <LoaderCircle className="spin" size={18}/> : <Sparkles size={17}/>} {busy ? '魚仔變身中…' : '生成我的像素魚仔'}</button>{busy && <p className="dialog-hint">好作品需要少少耐性，請保持視窗開啟。</p>}
+      </DialogContent>
+    </Dialog>
+    <Dialog open={!!reveal} onOpenChange={value => { if (!value) release(); }}><DialogContent className="fish-dialog new-fish-dialog">
+      <span className="room-eyebrow">{reveal?.sample ? 'SAY HELLO' : 'NEW CATCH UNLOCKED'}</span><DialogTitle className="fish-dialog-title">新夥伴，入手！</DialogTitle><DialogDescription>{reveal?.sample ? '呢尾係示範魚，唔會計入你嘅收藏。' : '漁獲已儲存，準備加入你嘅小世界。'}</DialogDescription>
+      <div className="new-fish-portrait">{reveal && <img src={reveal.image} alt={reveal.name}/>}<span className="portrait-spark spark-one">✦</span><span className="portrait-spark spark-two">✧</span></div><strong className="new-fish-name">{reveal?.name}</strong>
+      <button className="fish-primary" onClick={release}>放入水箱 <ArrowRight size={17}/></button>
+    </DialogContent></Dialog>
+    <Dialog open={atlas} onOpenChange={setAtlas}><DialogContent className="fish-dialog atlas-dialog"><span className="room-eyebrow">YOUR CATCH JOURNAL</span><DialogTitle className="fish-dialog-title">魚類圖鑑 <span className="atlas-total">{items.length}</span></DialogTitle><DialogDescription>每一尾，都係你親手釣返嚟嘅回憶。</DialogDescription>
+      {items.length ? <div className="atlas-grid">{items.map(item => <button key={item.id} onClick={() => { setAtlas(false); setDetail(item); }}><span><img src={item.image} alt="" loading="lazy"/></span><b>{item.name}</b><small>{item.date}</small></button>)}</div> : <div className="atlas-empty"><Fish size={38} strokeWidth={1}/><p>仲未有漁獲，下一尾會係邊個？</p><button className="fish-primary" onClick={() => { setAtlas(false); setOpen(true); }}>新增第一尾漁獲 <Plus size={16}/></button></div>}
+    </DialogContent></Dialog>
+    <Dialog open={!!detail} onOpenChange={value => { if (!value) setDetail(null); }}><DialogContent className="fish-dialog"><span className="room-eyebrow">ONE FISH, ONE STORY</span><DialogTitle className="fish-dialog-title">{detail?.name}</DialogTitle><DialogDescription>{detail?.sample ? '示範魚仔，未計入收藏。' : `釣獲日期：${detail?.date}`}</DialogDescription>{detail && <div className="detail-images"><figure><img src={detail.image} alt={`${detail.name}嘅像素魚仔`}/><figcaption>水箱裡嘅佢</figcaption></figure>{detail.source && <figure><img src={detail.source} alt="原始漁獲照片"/><figcaption>嗰日嘅漁獲</figcaption></figure>}</div>}</DialogContent></Dialog>
+  </main></>;
 }

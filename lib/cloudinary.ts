@@ -37,7 +37,7 @@ export async function uploadImage(env: CloudinaryEnv, file: Blob, publicId: stri
 
 function asset(env: CloudinaryEnv, reference: string) {
   const settings = config(env);
-  const match = /^cloudinary:([\w-]+)\/(fishboard\/(?:[\w-]+\/)?[\w-]+\/(?:source|badge))\.(png|jpg|jpeg|webp)$/.exec(reference);
+  const match = /^cloudinary:([\w-]+)\/(fishboard\/[\w-]+\/(?:source|badge))\.(png|jpg|jpeg|webp)$/.exec(reference);
   if (!match || match[1] !== settings.cloud) throw new Error('Invalid Cloudinary image reference');
   return { ...settings, publicId: match[2], format: match[3] };
 }
@@ -66,4 +66,6 @@ export async function removeImage(env: CloudinaryEnv, reference: string) {
     signal: AbortSignal.timeout(30000),
   });
   if (!response.ok) throw new Error('Cloudinary cleanup failed');
+  const result = await response.json() as { result?: string };
+  if (!['ok', 'not found'].includes(result.result || '')) throw new Error('Cloudinary cleanup incomplete');
 }

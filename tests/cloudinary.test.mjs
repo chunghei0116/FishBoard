@@ -13,12 +13,11 @@ globalThis.__fishboardTestUser = null;
 const catchesSource = (await readFile(new URL('../lib/catches.ts', import.meta.url), 'utf8'))
   .replace(/import[^\n]+\n/g, '')
   .replace(/^export function bindings[^\n]+/m, 'export function bindings(){return globalThis.__fishboardTestEnv}')
-  + '\nasync function verifyFirebaseToken(){if(!globalThis.__fishboardTestUser)throw new Error();return {uid:globalThis.__fishboardTestUser.userId,token:"test-token"}}\n';
+  + '\nasync function getChatGPTUser(){return globalThis.__fishboardTestUser}\n';
 const catchesURL = dataModule(catchesSource);
-const firestoreURL = dataModule(await readFile(new URL('../lib/firestore.ts',import.meta.url),'utf8'));
 async function route(path) {
   return import(dataModule((await readFile(new URL(path, import.meta.url), 'utf8'))
-    .replaceAll('@/lib/firestore', firestoreURL).replaceAll('@/lib/cloudinary', cloudinaryURL).replaceAll('@/lib/catches', catchesURL)));
+    .replaceAll('@/lib/cloudinary', cloudinaryURL).replaceAll('@/lib/catches', catchesURL)));
 }
 const imageRoute = await route('../app/api/images/[id]/route.ts');
 const catchRoute = await route('../app/api/catches/route.ts');
@@ -35,11 +34,14 @@ test('cross-cloud and malformed image references fail before any network call', 
 
 test('image route requires login and checks owner before contacting storage', async () => {
   globalThis.fetch = () => { throw new Error('Network must not be called'); };
-  const request = new Request('https://fishboard.test/api/images/other',{headers:{Authorization:'Bearer test-token'}});
+  const request = new Request('https://fishboard.test/api/images/other');
   const params = { params: Promise.resolve({ id: 'other' }) };
   assert.equal((await imageRoute.GET(request, params)).status, 401);
   globalThis.__fishboardTestUser = { userId: 'owner' };
-  globalThis.fetch = async (url,options)=>{assert.match(url,/users\/owner\/catches\/other$/);assert.equal(options.headers.Authorization,'Bearer test-token');return new Response('',{status:404})};
+  globalThis.__fishboardTestEnv = { DB: { prepare(sql) {
+    assert.match(sql, /id = \? AND owner = \?/);
+    return { bind(id, owner) { assert.equal(id, 'other'); assert.equal(owner, 'owner'); return { first: async () => null }; } };
+  } } };
   assert.equal((await imageRoute.GET(request, params)).status, 404);
 });
 
@@ -60,7 +62,6 @@ for (const failure of ['badge upload', 'database write']) {
         uploaded.push(public_id);
         return Response.json({ public_id, format: 'png', type: 'authenticated' });
       }
-      if(url.startsWith('https://firestore.googleapis.com/')) return new Response('',{status:503});
       assert.ok(url.endsWith('/destroy'));
       assert.equal(options.body.get('type'), 'authenticated');
       removed.push(options.body.get('public_id'));
@@ -69,15 +70,9 @@ for (const failure of ['badge upload', 'database write']) {
     const form = new FormData();
     form.set('image', new File(['test'], 'fish.png', { type: 'image/png' }));
     form.set('date', '2026-10-05');
-    const result = await catchRoute.POST(new Request('https://fishboard.test/api/catches', { method: 'POST', headers:{Authorization:'Bearer test-token'}, body: form }));
+    const result = await catchRoute.POST(new Request('https://fishboard.test/api/catches', { method: 'POST', body: form }));
     assert.equal(result.status, 503);
     assert.equal(uploaded.length, failure === 'badge upload' ? 1 : 2);
     assert.deepEqual(removed, uploaded);
   });
 }
-
-test('image proxy rejects a forged reference to another owner even in an owned document',async()=>{
- globalThis.__fishboardTestUser={userId:'owner'};globalThis.__fishboardTestEnv=credentials;
- globalThis.fetch=async url=>{assert.match(url,/firestore.googleapis.com/);return Response.json({fields:{image:{stringValue:'cloudinary:testcloud/fishboard/victim/other/badge.png'}}})};
- const response=await imageRoute.GET(new Request('https://fishboard.test/api/images/other',{headers:{Authorization:'Bearer test-token'}}),{params:Promise.resolve({id:'other'})});assert.equal(response.status,404);
-});

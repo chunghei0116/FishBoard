@@ -51,4 +51,6 @@ next-env.d.ts
 # Private Cloudflare Worker development secrets
 .dev.vars*
 
-.verification/
+# Local execution ledger and private migration exports
+/.superpowers/
+/private-migration/

@@ -1,26 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/catches/{catchId} {
-      function own() { return request.auth != null && request.auth.uid == userId; }
-      function valid() {
-        let d = request.resource.data;
-        return d.keys().hasAll(['id','owner','name','date','x','y','source','image','created'])
-          && d.keys().hasOnly(['id','owner','name','date','x','y','source','image','created'])
-          && catchId.matches('^[A-Za-z0-9_-]{1,128}$')
-          && d.id == catchId && d.owner == userId
-          && d.name is string && d.name.size() > 0 && d.name.size() <= 50
-          && d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-          && d.x is number && d.x >= 0 && d.x <= 1
-          && d.y is number && d.y >= 0 && d.y <= 1
-          && d.created is string && d.created.size() <= 32
-          && d.source is string && d.source.matches('^cloudinary:uhyqgn4z/fishboard/' + userId + '/' + catchId + '/source[.](png|jpg|jpeg|webp)$')
-          && d.image is string && d.image.matches('^cloudinary:uhyqgn4z/fishboard/' + userId + '/' + catchId + '/badge[.]png$');
-      }
-      allow read: if own();
-      allow create: if own() && valid();
-      allow update: if own() && valid() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x','y']);
-      allow delete: if own();
-    }
+    // All data access is through the owner-scoped Worker API with IAM.
+    match /{document=**} { allow read, write: if false; }
   }
 }
