@@ -1,12 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   lazy,
   Suspense,
   useCallback,
   useEffect,
-  useTransition,
   useRef,
   useState,
 } from "react";
@@ -27,6 +25,7 @@ import {
 import { stations, type StationId, type Point } from "@/lib/island-world";
 import { IslandJoystick } from "./island-joystick";
 import { useFishLog } from "@/components/fishlog/provider";
+const Popup = lazy(() => import("./island-popup").then((m) => ({ default: m.IslandPopup })));
 const Scene = lazy(() => import("./island-scene"));
 const icons = {
   aquarium: Fish,
@@ -36,9 +35,8 @@ const icons = {
   cabin: House,
 };
 export default function IslandExperience() {
-  const router = useRouter();
   const { loading, error } = useFishLog();
-  const [navigating, startTransition] = useTransition();
+  const [panel, setPanel] = useState<string | null>(null);
   const [near, setNear] = useState<StationId | null>(null),
     [ready, setReady] = useState(false),
     [guide, setGuide] = useState(true),
@@ -48,13 +46,16 @@ export default function IslandExperience() {
   const open = useCallback((id: StationId) => {
     const station = stations.find((station) => station.id === id);
     if (!station) return;
-    startTransition(() => router.push(station.href));
+    setPanel(station.href);
     setMenu(false);
     input.current = { x: 0, z: 0 };
-  }, [router]);
+  }, []);
   useEffect(() => {
-    if (window.location.hash === "#catch-log") router.replace("/journal#catch-log");
-  }, [router]);
+    let active = true;
+    queueMicrotask(() => { if (active && window.location.hash === "#catch-log") setPanel("/journal#catch-log"); });
+    return () => { active = false; };
+  }, []);
+  const close = useCallback(() => setPanel(null), []);
   const sceneReady = useCallback(() => setReady(true), []);
   const onNear = useCallback((id: StationId | null) => setNear(id), []);
   const nearby = stations.find((s) => s.id === near);
@@ -62,7 +63,7 @@ export default function IslandExperience() {
     <main className="island-app">
       <Suspense fallback={null}>
         <Scene
-          paused={navigating || loading}
+          paused={!!panel || loading}
           onInteract={open}
           onNear={onNear}
           input={input}
@@ -75,7 +76,7 @@ export default function IslandExperience() {
           <p>Finding your little island…</p>
         </div>
       )}
-      {error && <p className="island-service-notice" role="alert">{error} <Link href="/journal">開啟漁獲日誌</Link></p>}
+      {error && <p className="island-service-notice" role="alert">{error} <button onClick={() => open("journal")}>開啟漁獲日誌</button></p>}
       <header className="island-header">
         <Link href="/" className="island-brand">
           <span className="island-brand-icon">
@@ -202,7 +203,8 @@ export default function IslandExperience() {
           A little guidance <span>?</span>
         </button>
       </footer>
-      <IslandJoystick onMove={move} disabled={navigating || loading || !ready} />
+      {panel && <Suspense fallback={null}><Popup initialHref={panel} onClose={close} /></Suspense>}
+      <IslandJoystick onMove={move} disabled={!!panel || loading || !ready} />
     </main>
   );
 }

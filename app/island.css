@@ -710,3 +710,50 @@
 
 .island-service-notice { position:absolute; top:80px; left:20px; right:20px; z-index:5; margin:0 auto; max-width:560px; padding:12px 16px; border-radius:10px; background:#fff5e8; color:#78462d; font-size:13px; }
 .island-service-notice a { text-decoration:underline; }
+
+/* The native top-layer dialog keeps the game mounted and independent of content scrolling. */
+.island-popup {
+  --island-popup-bar: calc(56px + env(safe-area-inset-top, 0px));
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: var(--fl-bg);
+  color: var(--fl-text);
+  font-family: "Avenir Next", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+.island-popup[open] { display: flex; flex-direction: column; }
+.island-popup::backdrop { background: #14382d55; }
+.island-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  height: var(--island-popup-bar);
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+  background: var(--fl-surface);
+  border-bottom: 1px solid var(--fl-border);
+  z-index: 1200;
+}
+.island-popup-header h2 { flex: 1; margin: 0; font-size: 15px; font-weight: 650; }
+.island-popup-header button {
+  display: grid; place-items: center; width: 44px; height: 44px;
+  border: 1px solid var(--fl-border); border-radius: 50%; background: var(--fl-surface); color: var(--fl-text);
+}
+.island-popup-header button:disabled { opacity: .35; }
+.island-popup-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.island-popup .fl-app-shell { min-height: calc(100dvh - var(--island-popup-bar)); }
+.island-popup .fl-sidebar { height: calc(100dvh - var(--island-popup-bar)); }
+
+body:has(.island-popup[open]) { overflow: hidden; }
+
+.island-popup-header button:focus-visible { outline:2px solid var(--fl-blue); outline-offset:2px; }

@@ -1,7 +1,7 @@
 "use client";
 import { useLoading } from "./loading-dialog";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useContentNavigation as useRouter } from "./content-navigation";
 import { X, Camera, Sun, Moon } from "lucide-react";
 import { useFishLog } from "./provider";
 import { LocationInput } from "./location-input";

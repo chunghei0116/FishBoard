@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Settings, House, BookOpen, MapPin, Plus, Fish, ArrowUpRight, NotebookPen } from "lucide-react";
 import { updateAddVisibility } from "@/lib/mobile-navigation";
 import { useFishLog } from "./provider";
+import { useContentPath } from "./content-navigation";
 import { ThemeSwitch } from "./theme";
 import Landing from "./landing";
 const AddCatch = dynamic(() => import("./add-catch"), { ssr: false });
@@ -24,7 +25,9 @@ function Brand() {
   </Link>;
 }
 export default function Shell({ children }: { children: React.ReactNode }) {
-  const path = usePathname();
+  const route = usePathname();
+  const contentPath = useContentPath();
+  const path = contentPath ?? route;
   const { error, user, data } = useFishLog();
   const reduced = useReducedMotion();
   const [adding, setAdding] = useState(false);
@@ -33,19 +36,22 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const activeHref = path.startsWith("/species") ? "/collection" : path.startsWith("/catches") || path === "/add" ? "/journal" : path;
   const activeLabel = items.find(item => item.href === activeHref)?.label || "我的空間";
   useEffect(() => {
-    let state = { lastY: window.scrollY, travel: 0, hidden: false };
+    const scroller = contentPath ? document.querySelector<HTMLElement>(".island-popup-body") : null;
+    const target = scroller ?? window;
+    const scrollY = () => scroller ? scroller.scrollTop : window.scrollY;
+    let state = { lastY: scrollY(), travel: 0, hidden: false };
     let frame = 0;
     function scroll() {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        state = updateAddVisibility(state, window.scrollY, document.documentElement.scrollHeight - window.innerHeight);
+        state = updateAddVisibility(state, scrollY(), scroller ? scroller.scrollHeight - scroller.clientHeight : document.documentElement.scrollHeight - window.innerHeight);
         setScrollVisibility(previous => previous.path === path && previous.hidden === state.hidden ? previous : { path, hidden: state.hidden });
       });
     }
-    window.addEventListener("scroll", scroll, { passive: true });
-    return () => { window.removeEventListener("scroll", scroll); cancelAnimationFrame(frame); };
-  }, [path]);
+    target.addEventListener("scroll", scroll, { passive: true });
+    return () => { target.removeEventListener("scroll", scroll); cancelAnimationFrame(frame); };
+  }, [path, contentPath]);
   const navLinks = (mobile: boolean) => items.map(({ href, label, Icon }) => {
     const active = activeHref === href;
     return <Link key={href} href={href} aria-label={label} aria-current={active ? "page" : undefined}
@@ -56,7 +62,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       {!mobile && href === "/collection" && <small>{new Set(data.catches.map(c => c.speciesId)).size}</small>}
     </Link>;
   });
-  if (path === "/") return <>{children}</>;
+  if (!contentPath && path === "/") return <>{children}</>;
   if (!user) return <div className="fl-shell fl-shell-guest"><header className="fl-header"><Brand /><ThemeSwitch /></header><Landing /></div>;
   return <>
     <div className="fl-shell fl-app-shell">

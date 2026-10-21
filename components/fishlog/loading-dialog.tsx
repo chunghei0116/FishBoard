@@ -14,6 +14,8 @@ type Task = { message: string; priority: number };
 const LoadingContext = createContext<
   ((id: string, task: Task | null) => void) | null
 >(null);
+const LoadingBusyContext = createContext(false);
+export function useLoadingBusy() { return useContext(LoadingBusyContext); }
 export function useLoading(active: boolean, message: string, priority = 1) {
   const register = useContext(LoadingContext);
   const id = useId();
@@ -38,10 +40,10 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     [tasks],
   );
   return (
-    <LoadingContext.Provider value={register}>
+    <LoadingBusyContext.Provider value={!!current}><LoadingContext.Provider value={register}>
       {children}
       <LoadingDialog message={current?.message} />
-    </LoadingContext.Provider>
+    </LoadingContext.Provider></LoadingBusyContext.Provider>
   );
 }
 export function LoadingDialog({ message }: { message?: string }) {

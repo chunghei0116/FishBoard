@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import "./fishlog.css";
 import "./fishboard-ui.css";
@@ -25,7 +26,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-HK" suppressHydrationWarning>
-      <body>
+      <body className={GeistSans.variable}>
         <JournalTheme>
           <LoadingProvider>
             <FishLogProvider>

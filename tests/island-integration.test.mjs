@@ -25,6 +25,7 @@ globalThis.islandTest = { router, path: "/", loading: false, error: "", user: { 
 } };
 const mocks = {
   "next/link": `import {createElement as h} from '${import.meta.resolve("react")}'; export default function Link(p){return h('a',p,p.children)}`,
+  "./content-navigation": "export function useContentPath(){return undefined}",
   "next/navigation": "export function useRouter(){return globalThis.islandTest.router} export function usePathname(){return globalThis.islandTest.path}",
   "next/dynamic": "export default function dynamic(){return ()=>null}",
   "./provider": "export function useFishLog(){return globalThis.islandTest}",
@@ -55,17 +56,18 @@ globalThis.islandTest.Joystick = IslandJoystick;
 const { default: Island } = await compile("../components/island/island-experience.tsx", {
   "@/lib/island-world": world,
   "./island-joystick": "export const IslandJoystick=globalThis.islandTest.Joystick",
+  "./island-popup": `import {createElement as h} from '${import.meta.resolve("react")}';export function IslandPopup(p){globalThis.popupProps=p;return h('div',{role:'dialog'},h('button',{onClick:p.onClose},'關閉 popup'))}`,
   "./island-scene": `import {useEffect} from '${import.meta.resolve("react")}';export default function Scene(props){globalThis.islandSceneProps=props;useEffect(props.onReady,[props.onReady]);return null}`,
 });
 const { default: Shell } = await compile("../components/fishlog/shell.tsx", { "@/lib/mobile-navigation": await raw("../lib/mobile-navigation.ts") });
-const { CatchDetail } = await compile("../components/fishlog/pages.tsx", { "@/lib/fish-log": await raw("../lib/fish-log.ts") });
+const { CatchDetail, Collection, SpeciesDetail } = await compile("../components/fishlog/pages.tsx", { "@/lib/fish-log": await raw("../lib/fish-log.ts") });
 async function mount(Component, props = {}) {
   const root = createRoot(document.getElementById("root"));
   await act(async () => root.render(h(Component, props)));
   return () => act(async () => root.unmount());
 }
 
-test("each island station opens its existing journal feature instead of a separate collection app", async () => {
+test("each island station opens each original feature in a popup while keeping the scene mounted", async () => {
   navigation.length = 0;
   const unmount = await mount(Island);
   try {
@@ -74,12 +76,18 @@ test("each island station opens its existing journal feature instead of a separa
       await act(async () => document.querySelector('.island-menu-button').click());
       const buttons = document.querySelectorAll('nav[aria-label="Island features"] button');
       await act(async () => buttons[i].click());
-      assert.deepEqual(navigation.at(-1), ["push", expected[i]]);
+      assert.equal(popupProps.initialHref, expected[i]);
+      assert.equal(islandSceneProps.paused, true);
+      const input = islandSceneProps.input;
+      await act(async () => popupProps.onClose());
+      assert.equal(islandSceneProps.paused, false);
+      assert.equal(islandSceneProps.input, input);
     }
     islandSceneProps.input.current = { x: 1, z: 1 };
     await act(async () => islandSceneProps.onNear("toolbox"));
     await act(async () => document.querySelector('.island-interaction button').click());
-    assert.deepEqual(navigation.at(-1), ["push", "/add"]);
+    assert.equal(popupProps.initialHref, "/add");
+    assert.deepEqual(navigation, []);
     assert.deepEqual(islandSceneProps.input.current, { x: 0, z: 0 });
   } finally { await unmount(); }
 });
@@ -87,7 +95,7 @@ test("legacy catch-list bookmarks still open the full original journal", async (
   window.history.replaceState({}, "", "/#catch-log");
   navigation.length = 0;
   const unmount = await mount(Island);
-  try { assert.deepEqual(navigation, [["replace", "/journal#catch-log"]]); }
+  try { assert.deepEqual(navigation, []); assert.equal(popupProps.initialHref, "/journal#catch-log"); }
   finally { await unmount(); window.history.replaceState({}, "", "/"); }
 });
 test("island remains public while original journal authentication and navigation are retained", async () => {
@@ -119,4 +127,87 @@ test("catch detail keeps the original photo, species image and editing controls 
     assert.ok(document.querySelector('.fl-edit-catch'));
     assert.ok(document.querySelector('a[href="/species/bass"]'));
   } finally { await unmount(); }
+});
+
+
+// Exercise the real popup and navigation context, with the expensive scene/form work stubbed.
+globalThis.popupModalOrder = [];
+dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; popupModalOrder.push(this.className); };
+dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
+dom.window.HTMLElement.prototype.scrollIntoView = function () {};
+globalThis.CSS = { escape: (value) => value };
+const contentNav = await compile("../components/fishlog/content-navigation.tsx");
+globalThis.popupNavigation = contentNav;
+const navModule = "export const ContentNavigationProvider=globalThis.popupNavigation.ContentNavigationProvider; export const useContentPath=globalThis.popupNavigation.useContentPath;export const useContentNavigation=globalThis.popupNavigation.useContentNavigation";
+const { default: PopupShell } = await compile("../components/fishlog/shell.tsx", { "@/lib/mobile-navigation": await raw("../lib/mobile-navigation.ts"), "./content-navigation": navModule });
+globalThis.popupShell = PopupShell;
+globalThis.popupPages = { CatchDetail, Collection, SpeciesDetail };
+globalThis.popupBusy = false;
+const { IslandPopup } = await compile("../components/island/island-popup.tsx", {
+  "@/components/fishlog/content-navigation": navModule,
+  "@/components/fishlog/loading-dialog": "export function useLoadingBusy(){return globalThis.popupBusy}",
+  "@/components/fishlog/shell": "export default globalThis.popupShell",
+  "@/components/fishlog/home": `import {createElement as h} from '${import.meta.resolve("react")}';export default function Home(){return h('a',{href:'/catches/record'},'開啟測試紀錄')}`,
+  "@/components/fishlog/pages": "export const CatchDetail=globalThis.popupPages.CatchDetail;export const Collection=globalThis.popupPages.Collection;export const SpeciesDetail=globalThis.popupPages.SpeciesDetail",
+  "@/components/fishlog/map": "export default function Map(){return null}",
+  "@/components/fishlog/settings": "export default function Settings(){return null}",
+  "@/components/fishlog/gear": "export default function Gear(){return null}",
+  "@/components/fishlog/add-catch": `import {createElement as h,useRef,useEffect} from '${import.meta.resolve("react")}';export default function Add(){const nav=globalThis.popupNavigation.useContentNavigation();const ref=useRef(null);useEffect(()=>{const dialog=ref.current;dialog.showModal();return ()=>dialog.close()},[]);return h('dialog',{ref,className:'test-form'},h('button',{onClick:()=>nav.push('/catches/record')},'完成新增'))}`,
+});
+test("full-page popup keeps catch detail, photos and back navigation inside the same page", async () => {
+  navigation.length = 0;
+  const unmount = await mount(IslandPopup, { initialHref: "/journal", onClose() {} });
+  try {
+    assert.ok(document.querySelector('.island-popup').open);
+    await act(async () => document.querySelector('a[href="/catches/record"]').click());
+    assert.equal(document.querySelector('.island-popup-header h2').textContent, '漁獲詳情');
+    assert.equal(document.querySelector('.fl-original img').getAttribute('src'), '/api/media/photo-fixture');
+    assert.deepEqual(navigation, []);
+    assert.equal(window.location.pathname, '/');
+    await act(async () => document.querySelector('[aria-label="返回上一個收藏畫面"]').click());
+    assert.equal(document.querySelector('.island-popup-header h2').textContent, '漁獲日誌');
+    assert.ok(document.querySelector('a[href="/catches/record"]'));
+    assert.equal(document.body.style.overflow, '');
+  } finally { await unmount(); }
+});
+test("save completion can open details while the busy overlay still guards closing", async () => {
+  popupBusy = true;
+  popupModalOrder.length = 0;
+  navigation.length = 0;
+  let closed = 0;
+  const unmount = await mount(IslandPopup, { initialHref: "/add", onClose() { closed++; } });
+  try {
+    assert.deepEqual(popupModalOrder, ['island-popup', 'test-form']);
+    const close = document.querySelector('[aria-label="關閉收藏，返回小島"]');
+    assert.ok(close.disabled);
+    await act(async () => close.click());
+    const cancel = new dom.window.Event('cancel', { bubbles: false, cancelable: true });
+    await act(async () => document.querySelector('.island-popup').dispatchEvent(cancel));
+    assert.ok(cancel.defaultPrevented);
+    assert.equal(closed, 0);
+    await act(async () => [...document.querySelectorAll('button')].find((b) => b.textContent === '完成新增').click());
+    assert.equal(document.querySelector('.island-popup-header h2').textContent, '漁獲詳情');
+    assert.equal(document.querySelector('.test-form'), null);
+    assert.deepEqual(navigation, []);
+  } finally { await unmount(); popupBusy = false; }
+});
+test("standalone forms keep normal Next navigation outside a popup", async () => {
+  function Probe() { globalThis.outsideNavigation=contentNav.useContentNavigation();return null; }
+  const unmount = await mount(Probe);
+  try { assert.equal(outsideNavigation, router); }
+  finally { await unmount(); }
+});
+
+test("popup waits for authenticated data before mounting the existing add form", async () => {
+  islandTest.loading = true;
+  const root = createRoot(document.getElementById("root"));
+  const props = { initialHref: "/add", onClose() {} };
+  try {
+    await act(async () => root.render(h(IslandPopup, props)));
+    assert.equal(document.querySelector('.test-form'), null);
+    assert.ok(document.querySelector('.island-popup [role="status"]'));
+    islandTest.loading = false;
+    await act(async () => root.render(h(IslandPopup, props)));
+    assert.ok(document.querySelector('.test-form').open);
+  } finally { await act(async () => root.unmount()); islandTest.loading = false; }
 });

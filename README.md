@@ -6,7 +6,7 @@
 
 首頁 `/` 使用 Three.js 小島、原創 low-poly 釣手、WASD／點地行走及站點互動。手機有左下 360° 搖桿、啟動拉近人物及跟隨鏡頭；桌面維持全島視角並隱藏搖桿。減少動態時直接進入近鏡。遊戲畫面防止誤選文字，原有內容頁可正常輸入及複製。
 
-`2fb5496` 原有主頁完整保留於 `/journal`，包括海岸主視覺、水族箱、收藏摘要、魚種跑馬燈及漁獲列表。小島入口連接同一套現有頁面與資料服務：
+`2fb5496` 原有主頁完整保留於 `/journal`，包括海岸主視覺、水族箱、收藏摘要、魚種跑馬燈及漁獲列表。小島入口以全頁 popup 開啟同一套現有內容與資料服務（不跳頁）：
 
 | 小島站點 | 原有功能 |
 | --- | --- |
@@ -16,7 +16,7 @@
 | 地圖板 | `/map`：按 marker 篩選已有紀錄 |
 | 小屋 | `/settings`：帳戶、設定與 Three.js loadout |
 
-站點透過 Next.js 導覽，沿用根層的登入、資料與共用 loading provider。沒有另建 Collection、改寫資料格式或替換 AI／Firestore／圖片 API。`/#catch-log` 舊連結會轉到日誌列表；新增後照常開啟原有 catch detail。所有內容頁導覽可返回小島。
+站點開啟全螢幕原生 dialog，小島保持掛載並暫停。Popup 沿用原有 Shell、登入、資料與共用 loading provider；內部圖鑑、catch detail、新增及編輯都留在 popup，提供內部返回與關閉。儲存／生圖期間禁止關閉；新增完成會在 popup 顯示原有 catch detail。關閉後回到原本人物位置，網址不變。`/#catch-log` 舊連結會直接打開日誌 popup。原有獨立頁面仍可透過原網址使用。
 
 角色模型來源為 `art/character/build-island-angler.mjs`，使用既有 Three.js，`npm run build:character` 可重新輸出 `public/models/island-angler.glb`。細節與整合邊界見 [3D 小島整合說明](docs/design/island-integration.md)。
 

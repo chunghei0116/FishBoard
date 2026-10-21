@@ -222,7 +222,7 @@ const editorProvider = moduleURL(
   `export function useFishLog(){return globalThis.__editorState}`,
 );
 const editorRouter = moduleURL(
-  `export function useRouter(){return {push(){throw Error('Edit must stay on detail')},replace(){}}}`,
+  `export function useContentNavigation(){return {push(){throw Error('Edit must stay on detail')},replace(){}}}`,
 );
 const editorValidation = moduleURL(
   ts.transpileModule(
@@ -254,7 +254,7 @@ let editorSource = ts.transpileModule(
 for (const [key, replacement] of Object.entries({
   "./provider": editorProvider,
   "./loading-dialog": moduleURL("export function useLoading() {}"),
-  "next/navigation": editorRouter,
+  "./content-navigation": editorRouter,
   "./location-input": moduleURL(src),
   "@/lib/fish-log": editorValidation,
   "@/lib/photo-upload": editorPhoto,
