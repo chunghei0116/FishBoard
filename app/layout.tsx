@@ -3,6 +3,7 @@ import "./globals.css";
 import "./fishlog.css";
 import "./fishboard-ui.css";
 import "./fishboard-home.css";
+import "./island.css";
 import { FishLogProvider } from "@/components/fishlog/provider";
 import { JournalTheme } from "@/components/fishlog/theme";
 import { LoadingProvider } from "@/components/fishlog/loading-dialog";

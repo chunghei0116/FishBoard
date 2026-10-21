@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "test:storage": "node --test tests/cloudinary.test.mjs",
     "test": "node --test tests/*.test.mjs",
-    "build:vercel": "next build --webpack"
+    "build:vercel": "next build --webpack",
+    "build:character": "node --experimental-strip-types art/character/build-island-angler.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

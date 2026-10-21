@@ -41,7 +41,7 @@ export default function DeleteCatch({
         await refresh();
       }
       setOpen(false);
-      router.replace("/#catch-log");
+      router.replace("/journal#catch-log");
     } catch (e) {
       setError((e as Error).message);
     } finally {

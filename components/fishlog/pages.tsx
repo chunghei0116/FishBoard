@@ -120,7 +120,7 @@ export function CatchDetail({ id }: { id: string }) {
   ];
   return (
     <>
-      <Link className="fl-back" href="/#catch-log">
+      <Link className="fl-back" href="/journal#catch-log">
         <ArrowLeft size={15} /> 返回漁獲紀錄
       </Link>
       <div className="fl-detail-heading">
@@ -183,7 +183,7 @@ function Missing() {
       <span className="fl-eyebrow">找不到紀錄</span>
       <h1>搵唔到呢條紀錄。</h1>
       <p>紀錄可能未同步，或者呢條連結已經無效。</p>
-      <Link href="/">返回漁獲紀錄 →</Link>
+      <Link href="/journal">返回漁獲紀錄 →</Link>
     </div>
   );
 }

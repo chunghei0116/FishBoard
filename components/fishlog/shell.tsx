@@ -4,14 +4,15 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Settings, House, BookOpen, MapPin, Plus, Fish, ArrowUpRight } from "lucide-react";
+import { Settings, House, BookOpen, MapPin, Plus, Fish, ArrowUpRight, NotebookPen } from "lucide-react";
 import { updateAddVisibility } from "@/lib/mobile-navigation";
 import { useFishLog } from "./provider";
 import { ThemeSwitch } from "./theme";
 import Landing from "./landing";
 const AddCatch = dynamic(() => import("./add-catch"), { ssr: false });
 const items = [
-  { href: "/", label: "總覽", Icon: House },
+  { href: "/", label: "小島", Icon: House },
+  { href: "/journal", label: "漁獲日誌", Icon: NotebookPen },
   { href: "/collection", label: "魚種圖鑑", Icon: BookOpen },
   { href: "/map", label: "釣獲地點", Icon: MapPin },
   { href: "/settings", label: "設定", Icon: Settings },
@@ -29,7 +30,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [adding, setAdding] = useState(false);
   const [scrollVisibility, setScrollVisibility] = useState({ path, hidden: false });
   const addHidden = scrollVisibility.path === path && scrollVisibility.hidden;
-  const activeHref = path.startsWith("/species") ? "/collection" : path.startsWith("/catches") ? "/" : path;
+  const activeHref = path.startsWith("/species") ? "/collection" : path.startsWith("/catches") || path === "/add" ? "/journal" : path;
   const activeLabel = items.find(item => item.href === activeHref)?.label || "我的空間";
   useEffect(() => {
     let state = { lastY: window.scrollY, travel: 0, hidden: false };
@@ -55,6 +56,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       {!mobile && href === "/collection" && <small>{new Set(data.catches.map(c => c.speciesId)).size}</small>}
     </Link>;
   });
+  if (path === "/") return <>{children}</>;
   if (!user) return <div className="fl-shell fl-shell-guest"><header className="fl-header"><Brand /><ThemeSwitch /></header><Landing /></div>;
   return <>
     <div className="fl-shell fl-app-shell">
