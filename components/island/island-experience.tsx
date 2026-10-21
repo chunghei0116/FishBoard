@@ -4,7 +4,6 @@ import {
   lazy,
   Suspense,
   useCallback,
-  useEffect,
   useRef,
   useState,
 } from "react";
@@ -17,10 +16,6 @@ import {
   Package,
   House,
   X,
-  ArrowUp,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
   Compass,
   ChevronDown,
   Keyboard,
@@ -33,6 +28,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { stations, type StationId, type Point } from "@/lib/island-world";
+import { IslandJoystick } from "./island-joystick";
 const Scene = lazy(() => import("./island-scene"));
 const Collection = lazy(() => import("@/app/collection"));
 const icons = {
@@ -49,6 +45,7 @@ export default function IslandExperience() {
     [guide, setGuide] = useState(true),
     [menu, setMenu] = useState(false);
   const input = useRef<Point>({ x: 0, z: 0 });
+  const move = useCallback((point: Point) => { input.current = point; }, []);
   const open = useCallback((id: StationId) => {
     setPanel(id);
     setMenu(false);
@@ -56,17 +53,6 @@ export default function IslandExperience() {
   }, []);
   const sceneReady = useCallback(() => setReady(true), []);
   const onNear = useCallback((id: StationId | null) => setNear(id), []);
-  useEffect(() => {
-    const release = () => {
-      input.current = { x: 0, z: 0 };
-    };
-    window.addEventListener("pointerup", release);
-    window.addEventListener("pointercancel", release);
-    return () => {
-      window.removeEventListener("pointerup", release);
-      window.removeEventListener("pointercancel", release);
-    };
-  }, []);
   const selected = stations.find((s) => s.id === panel),
     nearby = stations.find((s) => s.id === near);
   return (
@@ -212,32 +198,7 @@ export default function IslandExperience() {
           A little guidance <span>?</span>
         </button>
       </footer>
-      <div className="island-touch" aria-label="Movement controls">
-        {[
-          { label: "Walk up", x: 0, z: -1, Icon: ArrowUp },
-          { label: "Walk left", x: -1, z: 0, Icon: ArrowLeft },
-          { label: "Walk down", x: 0, z: 1, Icon: ArrowDown },
-          { label: "Walk right", x: 1, z: 0, Icon: ArrowRight },
-        ].map(({ label, x, z, Icon }) => (
-          <button
-            key={label}
-            aria-label={label}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.currentTarget.setPointerCapture(e.pointerId);
-              input.current = { x, z };
-            }}
-            onPointerUp={() => {
-              input.current = { x: 0, z: 0 };
-            }}
-            onLostPointerCapture={() => {
-              input.current = { x: 0, z: 0 };
-            }}
-          >
-            <Icon size={19} />
-          </button>
-        ))}
-      </div>
+      <IslandJoystick onMove={move} disabled={!!panel || !ready} />
       <Dialog
         open={!!panel}
         onOpenChange={(v) => {

@@ -4,6 +4,7 @@ import * as T from "three";
 import { createScenery } from "./scenery";
 import { createCharacter } from "./character";
 import { updateMotion, type MotionState } from "@/lib/character-motion";
+import { isMobileIslandViewport, mobileIslandZoom } from "@/lib/island-camera";
 import {
   movePlayer,
   findPath,
@@ -59,7 +60,7 @@ export default function IslandScene({
     renderer.toneMappingExposure = 1.25;
     renderer.domElement.setAttribute(
       "aria-label",
-      "Playable fishing island. Use WASD or arrow keys to walk, E to interact.",
+      "Playable fishing island. Drag the joystick on phones, or use WASD or arrow keys to walk. Press E or tap the nearby action to interact.",
     );
     renderer.domElement.tabIndex = 0;
     el.insertBefore(renderer.domElement, el.firstChild);
@@ -203,11 +204,18 @@ export default function IslandScene({
     window.addEventListener("keyup", keyup);
     window.addEventListener("blur", blur);
     renderer.domElement.addEventListener("pointerdown", click);
+    let mobile = false, cameraTime = 0;
+    const cameraFocus = new T.Vector3();
+    const desiredFocus = new T.Vector3();
+    const cameraOffset = new T.Vector3(14, 24, 28);
     const resize = () => {
       const w = el.clientWidth,
         h = el.clientHeight;
       renderer.setSize(w, h);
       const aspect = w / h;
+      const nextMobile = isMobileIslandViewport(w, h, window.matchMedia("(pointer: coarse)").matches);
+      if (nextMobile !== mobile) cameraTime = 0;
+      mobile = nextMobile;
       const halfWidth = aspect < 0.8 ? 12.4 : aspect < 1.2 ? 13.8 : 16;
       camera.left = -halfWidth;
       camera.right = halfWidth;
@@ -259,7 +267,8 @@ export default function IslandScene({
               : { x: 0, z: 0 };
           }
         }
-        const next = movePlayer(position, direction, dt);
+        const strength = sx || sy ? Math.min(1, Math.hypot(sx, sy)) : 1;
+        const next = movePlayer(position, direction, dt * strength);
         moving = Math.hypot(next.x - position.x, next.z - position.z) > 0.0001;
         if (moving) {
           targetYaw = Math.atan2(direction.x, direction.z);
@@ -288,6 +297,25 @@ export default function IslandScene({
         target = null;
         marker.visible = false;
       }
+      const previousZoom = camera.zoom;
+      if (mobile) {
+        if (!current.current.paused) cameraTime += dt;
+        const zoom = mobileIslandZoom(cameraTime, reduced);
+        const reveal = (zoom - 1) / 1.2;
+        desiredFocus.set(character.group.position.x * reveal, 1.1 * reveal, character.group.position.z * reveal);
+        if (reduced) cameraFocus.copy(desiredFocus);
+        else cameraFocus.lerp(desiredFocus, 1 - Math.exp(-7 * dt));
+        camera.zoom = zoom;
+      } else {
+        cameraFocus.set(0, 0, 0);
+        camera.zoom = 1;
+      }
+      camera.position.copy(cameraOffset).add(cameraFocus);
+      camera.lookAt(cameraFocus);
+      camera.updateMatrixWorld();
+      if (camera.zoom !== previousZoom) camera.updateProjectionMatrix();
+      const closeUp = String(mobile && (reduced || cameraTime > 0.9));
+      if (el.dataset.closeUp !== closeUp) el.dataset.closeUp = closeUp;
       halo.position.x = position.x;
       halo.position.z = position.z;
       if (!reduced) {
@@ -323,6 +351,7 @@ export default function IslandScene({
           .project(camera);
         const label = labels.current[i];
         if (label) {
+          label.hidden = Math.abs(projected.x) > 1.1 || Math.abs(projected.y) > 1.1;
           label.style.left = `${(projected.x * 0.5 + 0.5) * 100}%`;
           label.style.top = `${(-projected.y * 0.5 + 0.5) * 100}%`;
           label.dataset.near = String(near === s.id);

@@ -4,7 +4,11 @@ A private fishing journal with a pixel aquarium and catch timeline. The UI follo
 
 ## Fisherman’s Island
 
-The home screen is a public, playable Three.js island with original procedural scenery and character art. Walk with WASD / arrow keys, click the ground or an object label to find a route, and press E near a station. Phones include directional touch controls. The Your island menu also opens each feature directly.
+The home screen is a public, playable Three.js island with original procedural scenery and character art. Walk with WASD / arrow keys, click the ground or an object label to find a route, and press E near a station. Phones and touch devices include a bottom-left virtual thumbstick: drag in any direction, push further to walk faster, and release to stop. The stick captures one pointer and resets on cancellation, focus loss, backgrounding or opening a feature panel. The Your island menu also opens each feature directly.
+
+Game HUD text does not select or show a long-press callout during touch play. Feature panels retain text selection and normal form editing. The joystick uses safe-area spacing and remains available in phone landscape.
+
+On phones, launch starts with an island overview and eases into a 2.2× closer view over about two seconds. The introductory heading fades out to clear the play area. The camera follows the player while walking; reduced motion starts directly at the closer view. Desktop keeps its fixed overview, heading, keyboard controls and no joystick.
 
 - Red toolbox: existing catch photo upload and pixel-fish generation.
 - Glass aquarium: existing fish collection, placement, and details.
